@@ -188,9 +188,9 @@ textarea{resize:vertical;min-height:90px}
             <th>Matière</th>
             <th>RAL</th>
             <th>Ép.</th>
-            <th>DVP</th>
-            <th>Long.</th>
-            <th>Qté</th>
+            <th>DVP (mm)</th>
+            <th>Lg (mm)</th>
+            <th style="white-space:nowrap">Qté</th>
             <th>PU HT</th>
             <th>Total HT</th>
             <th></th>
@@ -279,11 +279,12 @@ window.addEventListener('DOMContentLoaded', () => {
 function importerDepuisCalculette(){
   const stock = JSON.parse(localStorage.getItem('plialu-devis') || '[]');
   if(!stock.length){ alert('Aucune ligne en attente depuis la calculette.'); return; }
+  const matiereMap = {'Aluminium':'ALU','INOX':'IN','ACIER':'AC'};
   stock.forEach(l => {
     lignesDevis.push({
       id:          idCounter++,
       designation: l.designation || '',
-      matiere:     l.matiere     || '',
+      matiere:     matiereMap[l.matiere] || l.matiere || '',
       ral:         l.ral         || '',
       ep:          l.ep          || '',
       dvp:         l.dvp         || '',
@@ -358,7 +359,7 @@ function escHtml(s){
 function ajouterLigneManuelle(){
   lignesDevis.push({
     id: idCounter++,
-    designation:'', matiere:'Aluminium',
+    designation:'', matiere:'ALU',
     ral:'', ep:'15/10', dvp:'', lg:3000, qte:1, puHT:0
   });
   renderTable();
@@ -536,8 +537,8 @@ async function genererPDF(){
     l.matiere,
     l.ral,
     l.ep,
-    l.dvp ? l.dvp+'mm' : '',
-    l.lg  ? l.lg+'mm'  : '',
+    l.dvp ? String(l.dvp) : '',
+    l.lg  ? String(l.lg)  : '',
     l.qte,
     l.puHT.toFixed(2)+' €',
     (l.qte * l.puHT).toFixed(2)+' €'
@@ -545,7 +546,7 @@ async function genererPDF(){
 
   doc.autoTable({
     startY: y,
-    head: [['Désignation','Matière','RAL','Ép.','DVP','Long.','Qté','PU HT','Total HT']],
+    head: [['Désignation','Matière','RAL','Ép.','DVP (mm)','Lg (mm)','Qté','PU HT','Total HT']],
     body: rows,
     styles:      { fontSize:8, cellPadding:3 },
     headStyles:  { fillColor:[13,41,51], textColor:[232,252,105], fontStyle:'bold' },
