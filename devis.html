@@ -339,7 +339,7 @@ function renderDessins(){
       <img src="${d.imageBase64}" alt="${d.nom}">
       <div class="dessin-item-info">
         <div class="dessin-item-name">✏️ ${escHtml(d.nom)}</div>
-        <div class="dessin-item-date">${escHtml(d.date)}${d.notes ? ' — ' + escHtml(d.notes) : ''}</div>
+        ${d.notes ? `<div class="dessin-item-date">${escHtml(d.notes)}</div>` : ''}
       </div>
       <button class="dessin-item-del" onclick="supprimerDessin('${d.id}')">✕</button>
     </div>
@@ -618,9 +618,8 @@ async function genererPDF(){
       doc.text(d.nom, 14, dy);
       dy += 6;
       doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-      doc.text('Date : ' + d.date, 14, dy);
-      if(d.notes){ dy += 5; doc.text('Notes : ' + d.notes, 14, dy); }
-      dy += 10;
+      if(d.notes){ doc.text('Notes : ' + d.notes, 14, dy); dy += 5; }
+      dy += 5;
 
       // Image du dessin
       try {

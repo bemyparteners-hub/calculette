@@ -568,7 +568,7 @@
         <img src="${d.imageBase64}" alt="${d.nom}">
         <div class="saved-item-info">
           <div class="saved-item-name">${escHtml(d.nom)}</div>
-          <div class="saved-item-date">${escHtml(d.date)}${d.notes ? ' — ' + escHtml(d.notes) : ''}</div>
+          ${d.notes ? `<div class="saved-item-date">${escHtml(d.notes)}</div>` : ''}
         </div>
         <button class="saved-item-del" data-idx="${i}" title="Supprimer">✕</button>
       </div>
