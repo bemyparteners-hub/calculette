@@ -116,9 +116,9 @@ input::placeholder{color:#b0bec5}
 
   <label>Matière</label>
   <div class="btn-group" id="mat-btns" style="margin-bottom:16px">
-    <button class="mat-btn active" onclick="setMatiere('aluminium',this)">Aluminium</button>
-    <button class="mat-btn" onclick="setMatiere('acier',this)">Acier</button>
-    <button class="mat-btn" onclick="setMatiere('inox',this)">Inox</button>
+    <button class="mat-btn active" onclick="setMatiere('aluminium',this)">ALU</button>
+    <button class="mat-btn" onclick="setMatiere('acier',this)">AC</button>
+    <button class="mat-btn" onclick="setMatiere('inox',this)">IN</button>
     <button class="mat-btn" onclick="setMatiere('autre',this)">Autre</button>
   </div>
 
@@ -304,9 +304,9 @@ const CATEGORIES = {
 };
 
 const MATIERES = {
-  aluminium: { label:'Aluminium', epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
-  acier:     { label:'Acier',     epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
-  inox:      { label:'Inox',      epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
+  aluminium: { label:'ALU', epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
+  acier:     { label:'AC',  epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
+  inox:      { label:'IN',  epaisseurs:['10/10','15/10','20/10','25/10','30/10'] },
   autre:     { label:'Autre',     epaisseurs:['10/10','15/10','20/10','25/10','30/10'] }
 };
 
@@ -418,10 +418,9 @@ function calculer(){
   badge.textContent = 'Marge brute : ' + (mgb*100).toFixed(1) + '% — Delta mat : ' + delta.toFixed(2) + ' €';
   badge.style.display = 'block';
 
-  const mat = MATIERES[matiereActive].label;
   const ral = document.getElementById('ral-calc').value;
   const cat = CATEGORIES[categorieActive].label;
-  document.getElementById('add-desig').value = cat + ' ' + mat + ' ' + epaisseurActive + (ral ? ' - ' + ral : '') + ' - L' + (lg/1000).toFixed(2) + 'm';
+  document.getElementById('add-desig').value = cat + ' ' + Math.round(dvp) + '*' + Math.round(lg);
   document.getElementById('add-ral').value   = ral;
   document.getElementById('add-qte').value   = 1;
 }
