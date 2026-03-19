@@ -599,31 +599,46 @@ async function genererPDF(){
     finalY += lines.length * 5 + 4;
   }
 
-  // ── PAGES ANNEXES : DESSINS DU DESSINATEUR ──
+  // ── PAGES ANNEXES : DESSINS DU DESSINATEUR (2 par page) ──
   if(dessinsImportes.length){
-    dessinsImportes.forEach((d, i) => {
-      doc.addPage();
-      // Header annexe
-      doc.setFillColor(13,41,51);
-      doc.rect(0,0,210,22,'F');
-      doc.setTextColor(232,252,105);
-      doc.setFontSize(12); doc.setFont('helvetica','bold');
-      doc.text('ANNEXE — Dessin de pièce', 14, 14);
-      doc.setFontSize(8); doc.setTextColor(160,188,196); doc.setFont('helvetica','normal');
-      doc.text(numero, 196, 14, {align:'right'});
+    const IMG_H    = 85;   // hauteur image mm
+    const BLOCK_H  = 110;  // hauteur d'un bloc (titre + image + marge)
+    const PAGE_TOP = 28;   // y de départ après header
 
-      // Infos dessin
-      let dy = 30;
+    dessinsImportes.forEach((d, i) => {
+      const posInPage = i % 2;
+
+      if(posInPage === 0){
+        doc.addPage();
+        doc.setFillColor(13,41,51);
+        doc.rect(0,0,210,22,'F');
+        doc.setTextColor(232,252,105);
+        doc.setFontSize(10); doc.setFont('helvetica','bold');
+        doc.text('ANNEXE — Dessins de pièces', 14, 14);
+        doc.setFontSize(8); doc.setTextColor(160,188,196); doc.setFont('helvetica','normal');
+        doc.text(numero, 196, 14, {align:'right'});
+      }
+
+      let dy = PAGE_TOP + posInPage * BLOCK_H;
+
+      // Séparateur entre les deux dessins
+      if(posInPage === 1){
+        doc.setDrawColor(220,220,220);
+        doc.line(14, dy - 5, 196, dy - 5);
+      }
+
+      // Nom du dessin
       doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(13,41,51);
       doc.text(d.nom, 14, dy);
       dy += 6;
+
       doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
       if(d.notes){ doc.text('Notes : ' + d.notes, 14, dy); dy += 5; }
-      dy += 5;
+      dy += 2;
 
       // Image du dessin
       try {
-        doc.addImage(d.imageBase64, 'PNG', 14, dy, 182, 100);
+        doc.addImage(d.imageBase64, 'PNG', 14, dy, 182, IMG_H);
       } catch(err){
         doc.setTextColor(200,0,0);
         doc.text('Erreur : impossible de charger le dessin.', 14, dy+10);
