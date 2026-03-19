@@ -185,9 +185,7 @@ textarea{resize:vertical;min-height:90px}
         <thead>
           <tr>
             <th>Désignation</th>
-            <th>Matière</th>
             <th>RAL</th>
-            <th>Ép.</th>
             <th>DVP (mm)</th>
             <th>Lg (mm)</th>
             <th style="white-space:nowrap">Qté</th>
@@ -399,9 +397,7 @@ function renderTable(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input value="${l.designation}" onchange="updateLigne(${l.id},'designation',this.value)" style="min-width:160px"></td>
-      <td><input value="${l.matiere}"     onchange="updateLigne(${l.id},'matiere',this.value)"     style="min-width:80px"></td>
       <td><input value="${l.ral}"         onchange="updateLigne(${l.id},'ral',this.value)"         style="min-width:70px"></td>
-      <td><input value="${l.ep}"          onchange="updateLigne(${l.id},'ep',this.value)"          style="min-width:55px"></td>
       <td><input type="number" value="${l.dvp}" onchange="updateLigne(${l.id},'dvp',this.value)"  style="min-width:55px"></td>
       <td><input type="number" value="${l.lg}"  onchange="updateLigne(${l.id},'lg',this.value)"   style="min-width:65px"></td>
       <td><input type="number" value="${l.qte}" onchange="updateLigne(${l.id},'qte',this.value)"  style="min-width:45px" min="1"></td>
@@ -471,6 +467,18 @@ function renderPDFList(){
 }
 
 // ============================================================
+// RÉFÉRENCE MATIÈRE (format AL15-9016M)
+// ============================================================
+function buildRef(mat, ep, ral){
+  // mat: ALU/AC/IN → AL/AC/IN
+  const mCode = mat === 'ALU' ? 'AL' : (mat || '');
+  // ep: "15/10" → "15"
+  const epCode = ep ? String(ep).split('/')[0] : '';
+  const ref = mCode + epCode + (ral ? '-' + ral : '');
+  return ref || '';
+}
+
+// ============================================================
 // GÉNÉRATION PDF
 // ============================================================
 async function genererPDF(){
@@ -534,9 +542,7 @@ async function genererPDF(){
   // ── TABLEAU LIGNES ──
   const rows = lignesDevis.map(l => [
     l.designation,
-    l.matiere,
-    l.ral,
-    l.ep,
+    buildRef(l.matiere, l.ep, l.ral),
     l.dvp ? String(l.dvp) : '',
     l.lg  ? String(l.lg)  : '',
     l.qte,
@@ -546,21 +552,19 @@ async function genererPDF(){
 
   doc.autoTable({
     startY: y,
-    head: [['Désignation','Matière','RAL','Ép.','DVP (mm)','Lg (mm)','Qté','PU HT','Total HT']],
+    head: [['Désignation','Réf. Mat.','DVP (mm)','Lg (mm)','Qté','PU HT','Total HT']],
     body: rows,
     styles:      { fontSize:8, cellPadding:3 },
     headStyles:  { fillColor:[13,41,51], textColor:[232,252,105], fontStyle:'bold' },
     alternateRowStyles: { fillColor:[248,250,252] },
     columnStyles: {
-      0: { cellWidth:45 },
-      1: { cellWidth:22 },
-      2: { cellWidth:16 },
-      3: { cellWidth:13 },
-      4: { cellWidth:16 },
-      5: { cellWidth:16 },
-      6: { cellWidth:10 },
-      7: { cellWidth:20 },
-      8: { cellWidth:20 }
+      0: { cellWidth:60 },
+      1: { cellWidth:24 },
+      2: { cellWidth:18 },
+      3: { cellWidth:18 },
+      4: { cellWidth:12 },
+      5: { cellWidth:22 },
+      6: { cellWidth:24 }
     }
   });
 
