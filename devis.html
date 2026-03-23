@@ -95,6 +95,11 @@ textarea{resize:vertical;min-height:90px}
 
 .msg-import{background:#dcfce7;color:#166534;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;display:none;margin-top:10px}
 
+.comm-btn{padding:7px 14px;border:1.5px solid #dde3e8;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;background:#fff;color:#1a2e38;transition:.15s}
+.comm-btn:hover{border-color:#0d2933}
+.comm-btn.active{background:#0d2933;color:#e8fc69;border-color:#0d2933}
+.comm-info{margin-top:8px;font-size:12px;color:#1a2e38;background:#f8fafc;border-radius:8px;padding:8px 12px;border:1.5px solid #dde3e8;line-height:1.7}
+
 @media(max-width:650px){.grid2,.grid3{grid-template-columns:1fr}}
 </style>
 </head>
@@ -129,7 +134,7 @@ textarea{resize:vertical;min-height:90px}
         <input type="number" id="d-validite" value="30">
       </div>
     </div>
-    <div class="grid2">
+    <div class="grid2" style="margin-bottom:14px">
       <div>
         <label>Chantier / Projet</label>
         <input type="text" id="d-chantier" placeholder="Nom du chantier">
@@ -138,6 +143,16 @@ textarea{resize:vertical;min-height:90px}
         <label>Référence client</label>
         <input type="text" id="d-ref" placeholder="Réf. ou affaire">
       </div>
+    </div>
+    <div>
+      <label>Commercial</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="comm-btn active" data-comm="QM">QM</button>
+        <button type="button" class="comm-btn" data-comm="JPB">JPB</button>
+        <button type="button" class="comm-btn" data-comm="TR">TR</button>
+        <button type="button" class="comm-btn" data-comm="GB">GB</button>
+      </div>
+      <div class="comm-info" id="comm-info"></div>
     </div>
   </div>
 
@@ -255,6 +270,23 @@ textarea{resize:vertical;min-height:90px}
 
 <script>
 // ============================================================
+// COMMERCIAUX
+// ============================================================
+const COMMERCIAUX = {
+  QM:  { nom:'Quentin MONTEIRO',   fonction:'Chef des Ventes',                     tel:'06 58 98 33 39', email:'q.monteiro@plialu.fr' },
+  JPB: { nom:'Jean-Pierre BAX',    fonction:'Dirigeant',                            tel:'06 62 92 47 13', email:'jpbax@plialu.fr' },
+  TR:  { nom:'Thibaut RONDET',     fonction:'Technico-Commercial Sédentaire',       tel:'07 86 81 98 97', email:'t.rondet@plialu.fr' },
+  GB:  { nom:'Ghayth BENYOUCEF',   fonction:'Technico-Commercial en Alternance',    tel:'06 15 80 78 96', email:'g.benyoucef@plialu.fr' }
+};
+let selectedComm = 'QM';
+
+function updateCommInfo(){
+  const c = COMMERCIAUX[selectedComm];
+  document.getElementById('comm-info').innerHTML =
+    `<strong>${c.nom}</strong> — ${c.fonction}<br>${c.tel} &bull; ${c.email}`;
+}
+
+// ============================================================
 // ÉTAT
 // ============================================================
 let lignesDevis = [];
@@ -268,6 +300,15 @@ let dessinsImportes = [];   // tableau de {id, nom, notes, date, imageBase64}
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('d-date').value   = new Date().toISOString().split('T')[0];
   document.getElementById('d-numero').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+  updateCommInfo();
+  document.querySelectorAll('.comm-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.comm-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedComm = btn.dataset.comm;
+      updateCommInfo();
+    });
+  });
   renderTable();
 });
 
@@ -497,6 +538,8 @@ async function genererPDF(){
   const adresse  = document.getElementById('d-adresse').value  || '';
   const comment  = document.getElementById('d-comment').value  || '';
 
+  const comm = COMMERCIAUX[selectedComm];
+
   // ── HEADER ──
   doc.setFillColor(13,41,51);
   doc.rect(0,0,210,32,'F');
@@ -506,6 +549,11 @@ async function genererPDF(){
   doc.setFontSize(8); doc.setFont('helvetica','normal');
   doc.setTextColor(160,188,196);
   doc.text('Façonnage aluminium sur mesure — Enveloppe du bâtiment', 14, 26);
+  // Commercial dans l'en-tête
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text(comm.nom, 90, 17);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,188,196);
+  doc.text(comm.tel + '  |  ' + comm.email, 90, 23);
 
   // Badge DEVIS
   doc.setFillColor(232,252,105);
@@ -658,7 +706,7 @@ async function genererPDF(){
     doc.setFillColor(13,41,51);
     doc.rect(0,285,210,12,'F');
     doc.setFontSize(7); doc.setTextColor(160,188,196); doc.setFont('helvetica','normal');
-    doc.text('PLIALU — Façonnage aluminium sur mesure | Ghayth Benyoucef — Technico-commercial', 105, 292, {align:'center'});
+    doc.text('PLIALU — Façonnage aluminium sur mesure  |  ' + comm.nom + ' — ' + comm.email, 105, 292, {align:'center'});
     doc.setTextColor(232,252,105);
     doc.text('Page '+i+'/'+totalPages, 196, 292);
   }
