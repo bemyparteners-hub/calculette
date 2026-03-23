@@ -60,6 +60,12 @@
     .text-label.dragging{cursor:grabbing;box-shadow:0 0 0 2px #e8fc69;opacity:.85}
     .text-label .del-label{display:none;position:absolute;top:-10px;right:-10px;width:18px;height:18px;background:#d9534f;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;align-items:center;justify-content:center;line-height:1}
     .text-label:hover .del-label{display:flex}
+    .resize-handle{position:absolute;width:10px;height:10px;background:#0d2933;border:2px solid #e8fc69;border-radius:2px;display:none;z-index:15}
+    .text-label:hover .resize-handle,.text-label.dragging .resize-handle{display:block}
+    .resize-handle.nw{top:-5px;left:-5px;cursor:nw-resize}
+    .resize-handle.ne{top:-5px;right:-5px;cursor:ne-resize}
+    .resize-handle.sw{bottom:-5px;left:-5px;cursor:sw-resize}
+    .resize-handle.se{bottom:-5px;right:-5px;cursor:se-resize}
 
     .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .btn-primary{background:#e8fc69;color:#0d2933;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
@@ -121,7 +127,6 @@
         <button class="tool-btn active" data-tool="pen" title="Crayon">✏️ Crayon</button>
         <button class="tool-btn" data-tool="eraser" title="Gomme">🧹 Gomme</button>
         <button class="tool-btn" data-tool="text" title="Texte">🔤 Texte</button>
-        <button class="tool-btn" data-tool="move" title="Déplacer texte">🤚 Déplacer</button>
       </div>
 
       <div class="toolbar-sep"></div>
@@ -253,7 +258,7 @@
   // Drawing — straight lines (pen) + freehand (eraser)
   // ══════════════════════════════════════════
   function startDraw(e) {
-    if (tool === 'text' || tool === 'move') return;
+    if (tool === 'text') return;
     e.preventDefault();
     drawing = true;
     saveState();
@@ -349,7 +354,7 @@
   textInput.addEventListener('blur', commitText);
 
   // ══════════════════════════════════════════
-  // Draggable text label system
+  // Draggable + resizable text label system
   // ══════════════════════════════════════════
   function createTextLabel(text, x, y, col, fontSize) {
     const id = 'lbl-' + Date.now();
@@ -359,7 +364,10 @@
     el.style.top = (y - fontSize) + 'px';
     el.style.fontSize = fontSize + 'px';
     el.style.color = col;
+    el.style.pointerEvents = 'auto';
     el.textContent = text;
+
+    const lbl = { id, text, x, y: y - fontSize, color: col, fontSize, el };
 
     // Delete button
     const del = document.createElement('button');
@@ -372,56 +380,92 @@
     });
     el.appendChild(del);
 
-    // Drag logic
+    // ── Resize handles ──
+    let isResizing = false;
+    let resizeCorner = '';
+    let resizeStartX = 0, resizeStartY = 0;
+    let resizeStartFontSize = 0;
+    let resizeStartLeft = 0, resizeStartTop = 0;
+
+    ['nw', 'ne', 'sw', 'se'].forEach(corner => {
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle ' + corner;
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        isResizing = true;
+        resizeCorner = corner;
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        resizeStartFontSize = lbl.fontSize;
+        resizeStartLeft = el.offsetLeft;
+        resizeStartTop = el.offsetTop;
+      });
+      el.appendChild(handle);
+    });
+
+    // ── Drag logic ──
     let isDragging = false;
     let dragOffsetX = 0, dragOffsetY = 0;
 
     function onDragStart(e) {
+      if (isResizing) return;
       e.preventDefault();
       e.stopPropagation();
       isDragging = true;
       el.classList.add('dragging');
       const src = e.touches ? e.touches[0] : e;
-      const rect = wrap.getBoundingClientRect();
-      dragOffsetX = src.clientX - el.offsetLeft - rect.left + wrap.scrollLeft;
-      dragOffsetY = src.clientY - el.offsetTop - rect.top + wrap.scrollTop;
-
-      // Use offsetLeft directly since label is inside canvasWrap
       dragOffsetX = src.clientX - el.offsetLeft;
       dragOffsetY = src.clientY - el.offsetTop;
     }
 
-    function onDragMove(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      const src = e.touches ? e.touches[0] : e;
-      let nx = src.clientX - dragOffsetX;
-      let ny = src.clientY - dragOffsetY;
-      // Clamp inside canvas
-      nx = Math.max(0, Math.min(nx, wrap.clientWidth - el.offsetWidth));
-      ny = Math.max(0, Math.min(ny, 500 - el.offsetHeight));
-      el.style.left = nx + 'px';
-      el.style.top = ny + 'px';
-      // Update stored position
-      const lbl = textLabels.find(t => t.id === id);
-      if (lbl) { lbl.x = nx; lbl.y = ny; }
+    function onDocMouseMove(e) {
+      if (isDragging) {
+        e.preventDefault();
+        const src = e.touches ? e.touches[0] : e;
+        let nx = src.clientX - dragOffsetX;
+        let ny = src.clientY - dragOffsetY;
+        nx = Math.max(0, Math.min(nx, wrap.clientWidth - el.offsetWidth));
+        ny = Math.max(0, Math.min(ny, 500 - el.offsetHeight));
+        el.style.left = nx + 'px';
+        el.style.top = ny + 'px';
+        lbl.x = nx; lbl.y = ny;
+      }
+      if (isResizing) {
+        e.preventDefault();
+        const dx = e.clientX - resizeStartX;
+        const dy = e.clientY - resizeStartY;
+        let delta;
+        if (resizeCorner === 'se') delta = (dx + dy) / 2;
+        else if (resizeCorner === 'sw') delta = (-dx + dy) / 2;
+        else if (resizeCorner === 'ne') delta = (dx - dy) / 2;
+        else delta = -(dx + dy) / 2; // nw
+        const newSize = Math.max(8, Math.min(200, Math.round(resizeStartFontSize + delta)));
+        lbl.fontSize = newSize;
+        el.style.fontSize = newSize + 'px';
+        // Anchor opposite corner: adjust position for top handles
+        if (resizeCorner === 'nw' || resizeCorner === 'ne') {
+          el.style.top = (resizeStartTop - (newSize - resizeStartFontSize)) + 'px';
+        }
+      }
     }
 
-    function onDragEnd() {
-      if (!isDragging) return;
-      isDragging = false;
-      el.classList.remove('dragging');
+    function onDocMouseUp() {
+      if (isDragging) { isDragging = false; el.classList.remove('dragging'); }
+      if (isResizing) { isResizing = false; }
     }
 
     el.addEventListener('mousedown', onDragStart);
-    document.addEventListener('mousemove', onDragMove);
-    document.addEventListener('mouseup', onDragEnd);
+    document.addEventListener('mousemove', onDocMouseMove);
+    document.addEventListener('mouseup', onDocMouseUp);
     el.addEventListener('touchstart', onDragStart, { passive: false });
-    document.addEventListener('touchmove', onDragMove, { passive: false });
-    document.addEventListener('touchend', onDragEnd);
+    document.addEventListener('touchmove', (e) => {
+      if (isDragging) { onDocMouseMove(e); }
+    }, { passive: false });
+    document.addEventListener('touchend', onDocMouseUp);
 
     wrap.appendChild(el);
-    textLabels.push({ id, text, x, y: y - fontSize, color: col, fontSize, el });
+    textLabels.push(lbl);
   }
 
   // ══════════════════════════════════════════
@@ -451,13 +495,7 @@
       tool = btn.dataset.tool;
       if (tool === 'eraser') canvas.style.cursor = 'cell';
       else if (tool === 'text') canvas.style.cursor = 'text';
-      else if (tool === 'move') canvas.style.cursor = 'grab';
       else canvas.style.cursor = 'crosshair';
-
-      // Toggle pointer events on labels
-      textLabels.forEach(t => {
-        t.el.style.pointerEvents = (tool === 'move' || tool === 'text') ? 'auto' : 'none';
-      });
     });
   });
 
