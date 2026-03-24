@@ -54,8 +54,6 @@
     #drawHUD{position:absolute;display:none;pointer-events:none;background:rgba(13,41,51,0.87);color:#e8fc69;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;z-index:30;white-space:nowrap;font-family:'Segoe UI',sans-serif}
     /* Guide canvas (croix fictives) */
     #guideCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:5}
-    /* Toast — forme fermée */
-    #closeToast{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);background:rgba(46,125,50,0.93);color:#fff;padding:10px 26px;border-radius:10px;font-size:15px;font-weight:700;z-index:40;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;letter-spacing:.3px}
     /* Outil angle — aide contextuelle */
     #angleHint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(13,41,51,0.82);color:#e8fc69;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;z-index:35;pointer-events:none;white-space:nowrap;display:none}
     /* Résultat angle */
@@ -186,7 +184,6 @@
       </div>
       <canvas id="guideCanvas"></canvas>
       <div id="drawHUD"></div>
-      <div id="closeToast">Forme fermée ✓</div>
       <div id="angleHint"></div>
       <div id="angleResult"></div>
     </div>
@@ -247,13 +244,7 @@
   const hud = document.getElementById('drawHUD');
   let scale = 100;       // dénominateur de 1:N
   const SNAP_PX = 15;   // rayon de snap (px)
-  let lastSegStart  = null;  // début du dernier segment commis
-  let lastSegEnd    = null;  // fin    du dernier segment commis
-  let snappedToLast = false;
-  // ── Chaîne de segments (fermeture de forme) ──
-  let chainStart    = null;  // 1er point de la chaîne en cours
-  let chainFirstEnd = null;  // 2e point de la chaîne (pour l'angle de fermeture)
-  let segmentCount  = 0;     // segments commis dans la chaîne
+  let lastSegEnd = null; // fin du dernier segment — snap d'enchaînement
   // ── Canvas de guides (croix fictives) ──
   const guideCanvas = document.getElementById('guideCanvas');
   const gctx = guideCanvas.getContext('2d');
@@ -304,32 +295,6 @@
       gctx.restore();
     }
 
-    // ── Indicateur de fermeture de forme ──
-    if (chainStart && segmentCount >= 2) {
-      const near = Math.hypot(p.x - chainStart.x, p.y - chainStart.y) < SNAP_PX;
-      gctx.save();
-      gctx.setLineDash(near ? [] : [3, 3]);
-      gctx.beginPath();
-      gctx.arc(chainStart.x, chainStart.y, SNAP_PX, 0, Math.PI * 2);
-      gctx.strokeStyle = near ? 'rgba(46,125,50,0.95)' : 'rgba(46,125,50,0.45)';
-      gctx.lineWidth = near ? 2.5 : 1.5;
-      gctx.stroke();
-      if (near) {
-        gctx.font = 'bold 11px "Segoe UI", sans-serif';
-        gctx.fillStyle = 'rgba(46,125,50,0.95)';
-        gctx.textAlign = 'center';
-        gctx.fillText('Fermer ici', chainStart.x, chainStart.y - SNAP_PX - 5);
-      }
-      gctx.restore();
-    }
-  }
-
-  // ── Toast "Forme fermée ✓" ──
-  function showCloseToast() {
-    const toast = document.getElementById('closeToast');
-    clearTimeout(toast._t);
-    toast.style.opacity = '1';
-    toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
   }
 
   // ══════════════════════════════════════════
@@ -482,8 +447,7 @@
     fillWhite();
     textLabels.forEach(t => t.el.remove());
     textLabels = [];
-    lastSegStart = null; lastSegEnd = null;
-    chainStart = null; chainFirstEnd = null; segmentCount = 0;
+    lastSegEnd = null;
     clearGuides();
   }
 
@@ -527,20 +491,6 @@
       return;
     }
 
-    // ── Fermeture automatique de la chaîne ──
-    if (tool === 'pen' && chainStart && segmentCount >= 2 &&
-        Math.hypot(p.x - chainStart.x, p.y - chainStart.y) < SNAP_PX) {
-      saveState();
-      const segStart = { ...lastSegEnd };
-      const segEnd   = { ...chainStart };
-      drawLine(segStart, segEnd);
-      showCloseToast();
-      lastSegStart = null; lastSegEnd = null;
-      chainStart = null; chainFirstEnd = null; segmentCount = 0;
-      clearGuides();
-      return;
-    }
-
     drawing = true;
     saveState();
 
@@ -548,12 +498,9 @@
       // Snap au dernier point si proche
       if (lastSegEnd && Math.hypot(p.x - lastSegEnd.x, p.y - lastSegEnd.y) < SNAP_PX) {
         startPoint = { ...lastSegEnd };
-        snappedToLast = true;
       } else {
         startPoint = p;
-        snappedToLast = false;
-        lastSegStart = null; lastSegEnd = null;
-        chainStart = null; chainFirstEnd = null; segmentCount = 0;
+        lastSegEnd = null;
       }
       snapshotBeforeLine = ctx.getImageData(0, 0, canvas.width, canvas.height);
     } else {
@@ -611,19 +558,11 @@
 
         const dist = Math.hypot(p.x - startPoint.x, p.y - startPoint.y);
         if (dist > 4) {
-          // Alimenter la chaîne
-          if (segmentCount === 0) {
-            chainStart    = { ...startPoint };
-            chainFirstEnd = { ...p };
-          }
-          segmentCount++;
-          lastSegStart = { ...startPoint };
-          lastSegEnd   = { ...p };
+          lastSegEnd = { ...p };
         }
       }
       startPoint = null;
       snapshotBeforeLine = null;
-      snappedToLast = false;
     }
 
     ctx.globalCompositeOperation = 'source-over';
@@ -864,9 +803,7 @@
       } else {
         fillWhite();
       }
-      // Réinitialiser la chaîne (on ne sait plus où on en est)
-      lastSegStart = null; lastSegEnd = null;
-      chainStart = null; chainFirstEnd = null; segmentCount = 0;
+      lastSegEnd = null;
       clearGuides();
     }
   });
