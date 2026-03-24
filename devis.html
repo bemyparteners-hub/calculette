@@ -152,7 +152,6 @@ textarea{resize:vertical;min-height:90px}
         <button type="button" class="comm-btn" data-comm="TR">TR</button>
         <button type="button" class="comm-btn" data-comm="GB">GB</button>
       </div>
-      <div class="comm-info" id="comm-info"></div>
     </div>
   </div>
 
@@ -549,12 +548,6 @@ async function genererPDF(){
   doc.setFontSize(8); doc.setFont('helvetica','normal');
   doc.setTextColor(160,188,196);
   doc.text('Façonnage aluminium sur mesure — Enveloppe du bâtiment', 14, 26);
-  // Commercial dans l'en-tête
-  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
-  doc.text(comm.nom, 90, 17);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,188,196);
-  doc.text(comm.tel + '  |  ' + comm.email, 90, 23);
-
   // Badge DEVIS
   doc.setFillColor(232,252,105);
   doc.roundedRect(148,7,52,18,3,3,'F');
@@ -564,8 +557,15 @@ async function genererPDF(){
   doc.setFontSize(8);
   doc.text(numero, 174, 23, {align:'center'});
 
-  // ── INFOS DEVIS ──
-  let y = 40;
+  // ── COMMERCIAL + INFOS DEVIS ──
+  let y = 36;
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(100,100,100);
+  doc.text('COMMERCIAL', 14, y); y += 6;
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(13,41,51);
+  doc.text(comm.nom, 14, y); y += 5;
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+  doc.text(comm.fonction, 14, y); y += 5;
+  doc.text(comm.tel + '  |  ' + comm.email, 14, y); y += 14;
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
   doc.text(`Date : ${date}`, 14, y);
   doc.text(`Validité : ${validite} jours`, 70, y);
@@ -574,7 +574,7 @@ async function genererPDF(){
 
   // ── BLOC CLIENT ──
   doc.setFillColor(248,250,252);
-  doc.roundedRect(120,36,76,36,3,3,'F');
+  doc.roundedRect(120,36,76,52,3,3,'F');
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(13,41,51);
   doc.text('DESTINATAIRE', 124, 43);
   doc.setFont('helvetica','normal'); doc.setTextColor(40,40,40);
