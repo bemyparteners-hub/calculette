@@ -52,6 +52,10 @@
 
     /* Draw HUD — live cotation overlay */
     #drawHUD{position:absolute;display:none;pointer-events:none;background:rgba(13,41,51,0.87);color:#e8fc69;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;z-index:30;white-space:nowrap;font-family:'Segoe UI',sans-serif}
+    /* Guide canvas (croix fictives) */
+    #guideCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:5}
+    /* Toast — forme fermée */
+    #closeToast{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);background:rgba(46,125,50,0.93);color:#fff;padding:10px 26px;border-radius:10px;font-size:15px;font-weight:700;z-index:40;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;letter-spacing:.3px}
     /* Scale input */
     #scaleInput{width:64px;padding:5px 8px;border:1.5px solid #dde3e8;border-radius:6px;font-size:13px;font-weight:600;color:#1a2e38;background:#fff;transition:border .2s}
     #scaleInput:focus{outline:none;border-color:#0d2933}
@@ -171,7 +175,9 @@
       <div id="textOverlay">
         <input type="text" id="textInput" placeholder="Saisir texte…">
       </div>
+      <canvas id="guideCanvas"></canvas>
       <div id="drawHUD"></div>
+      <div id="closeToast">Forme fermée ✓</div>
     </div>
   </div>
 
@@ -209,6 +215,12 @@
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Guide canvas — même taille, même DPR
+    guideCanvas.width = w * dpr;
+    guideCanvas.height = h * dpr;
+    guideCanvas.style.width = w + 'px';
+    guideCanvas.style.height = h + 'px';
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     restoreFromHistory();
   }
 
@@ -223,10 +235,17 @@
   // ── Cotation / échelle ──
   const hud = document.getElementById('drawHUD');
   let scale = 100;       // dénominateur de 1:N
-  const SNAP_PX = 15;   // rayon de snap sur le dernier point (px)
-  let lastSegStart = null;  // début du dernier segment commis
-  let lastSegEnd   = null;  // fin    du dernier segment commis
+  const SNAP_PX = 15;   // rayon de snap (px)
+  let lastSegStart  = null;  // début du dernier segment commis
+  let lastSegEnd    = null;  // fin    du dernier segment commis
   let snappedToLast = false;
+  // ── Chaîne de segments (fermeture de forme) ──
+  let chainStart    = null;  // 1er point de la chaîne en cours
+  let chainFirstEnd = null;  // 2e point de la chaîne (pour l'angle de fermeture)
+  let segmentCount  = 0;     // segments commis dans la chaîne
+  // ── Canvas de guides (croix fictives) ──
+  const guideCanvas = document.getElementById('guideCanvas');
+  const gctx = guideCanvas.getContext('2d');
 
   document.getElementById('scaleInput').addEventListener('input', e => {
     const v = parseInt(e.target.value);
@@ -320,6 +339,75 @@
     ctx.restore();
   }
 
+  // ══════════════════════════════════════════
+  // Guides (croix fictives) — canvas overlay
+  // ══════════════════════════════════════════
+  function clearGuides() {
+    gctx.clearRect(0, 0, wrap.clientWidth, 500);
+  }
+
+  function drawGuides(p) {
+    const w = wrap.clientWidth;
+    const h = 500;
+    gctx.clearRect(0, 0, w, h);
+
+    if (tool !== 'pen') return;
+
+    // ── Croix pointillée après 3 segments ──
+    if (segmentCount >= 3) {
+      gctx.save();
+      gctx.strokeStyle = 'rgba(100,149,237,0.38)';
+      gctx.lineWidth = 1;
+      gctx.setLineDash([5, 5]);
+      // Verticale
+      gctx.beginPath(); gctx.moveTo(p.x, 0); gctx.lineTo(p.x, h); gctx.stroke();
+      // Horizontale
+      gctx.beginPath(); gctx.moveTo(0, p.y); gctx.lineTo(w, p.y);  gctx.stroke();
+      gctx.restore();
+    }
+
+    // ── Indicateur de fermeture de forme ──
+    if (chainStart && segmentCount >= 2) {
+      const near = Math.hypot(p.x - chainStart.x, p.y - chainStart.y) < SNAP_PX;
+      gctx.save();
+      gctx.setLineDash(near ? [] : [3, 3]);
+      gctx.beginPath();
+      gctx.arc(chainStart.x, chainStart.y, SNAP_PX, 0, Math.PI * 2);
+      gctx.strokeStyle = near ? 'rgba(46,125,50,0.95)' : 'rgba(46,125,50,0.45)';
+      gctx.lineWidth = near ? 2.5 : 1.5;
+      gctx.stroke();
+      if (near) {
+        gctx.font = 'bold 11px "Segoe UI", sans-serif';
+        gctx.fillStyle = 'rgba(46,125,50,0.95)';
+        gctx.textAlign = 'center';
+        gctx.fillText('Fermer ici', chainStart.x, chainStart.y - SNAP_PX - 5);
+      }
+      gctx.restore();
+    }
+  }
+
+  // ── Toast "Forme fermée ✓" ──
+  function showCloseToast() {
+    const toast = document.getElementById('closeToast');
+    clearTimeout(toast._t);
+    toast.style.opacity = '1';
+    toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  }
+
+  // ── Guides sur survol (hors dessin actif) ──
+  canvas.addEventListener('mousemove', (e) => {
+    if (drawing) return; // géré dans moveDraw
+    if (tool !== 'pen') { clearGuides(); return; }
+    drawGuides(getPos(e));
+  });
+
+  canvas.addEventListener('mouseleave', clearGuides);
+
+  // ── Effacer guides quand on change d'outil ──
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => { clearGuides(); });
+  });
+
   // ── Text labels (draggable overlays) ──
   let textLabels = []; // {id, text, x, y, color, fontSize, el}
 
@@ -348,8 +436,9 @@
     fillWhite();
     textLabels.forEach(t => t.el.remove());
     textLabels = [];
-    lastSegStart = null;
-    lastSegEnd   = null;
+    lastSegStart = null; lastSegEnd = null;
+    chainStart = null; chainFirstEnd = null; segmentCount = 0;
+    clearGuides();
   }
 
   function getPos(e) {
@@ -375,9 +464,30 @@
   function startDraw(e) {
     if (tool === 'text') return;
     e.preventDefault();
+    const p = getPos(e);
+
+    // ── Fermeture automatique de la chaîne ──
+    if (tool === 'pen' && chainStart && segmentCount >= 2 &&
+        Math.hypot(p.x - chainStart.x, p.y - chainStart.y) < SNAP_PX) {
+      saveState();
+      const segStart = { ...lastSegEnd };
+      const segEnd   = { ...chainStart };
+      drawLine(segStart, segEnd);
+      const dist = Math.hypot(segEnd.x - segStart.x, segEnd.y - segStart.y);
+      if (dist > 4) {
+        drawLengthAnnotation(segStart, segEnd);
+        if (lastSegStart) drawJunctionAngle(lastSegStart, segStart, segEnd);
+        if (chainFirstEnd) drawJunctionAngle(segStart, chainStart, chainFirstEnd);
+      }
+      showCloseToast();
+      lastSegStart = null; lastSegEnd = null;
+      chainStart = null; chainFirstEnd = null; segmentCount = 0;
+      clearGuides();
+      return;
+    }
+
     drawing = true;
     saveState();
-    const p = getPos(e);
 
     if (tool === 'pen') {
       // Snap au dernier point si proche
@@ -387,8 +497,8 @@
       } else {
         startPoint = p;
         snappedToLast = false;
-        lastSegStart = null;
-        lastSegEnd   = null;
+        lastSegStart = null; lastSegEnd = null;
+        chainStart = null; chainFirstEnd = null; segmentCount = 0;
       }
       snapshotBeforeLine = ctx.getImageData(0, 0, canvas.width, canvas.height);
     } else {
@@ -422,6 +532,8 @@
       const hudY = (p.y - 38 > 0) ? p.y - 38 : p.y + 8;
       hud.style.left = hudX + 'px';
       hud.style.top  = hudY + 'px';
+      // Guides aussi pendant le drag
+      drawGuides(p);
     } else {
       hud.style.display = 'none';
       ctx.lineTo(p.x, p.y);
@@ -448,6 +560,12 @@
           if (snappedToLast && lastSegStart) {
             drawJunctionAngle(lastSegStart, startPoint, p);
           }
+          // Alimenter la chaîne
+          if (segmentCount === 0) {
+            chainStart    = { ...startPoint };
+            chainFirstEnd = { ...p };
+          }
+          segmentCount++;
           lastSegStart = { ...startPoint };
           lastSegEnd   = { ...p };
         }
@@ -673,6 +791,10 @@
       } else {
         fillWhite();
       }
+      // Réinitialiser la chaîne (on ne sait plus où on en est)
+      lastSegStart = null; lastSegEnd = null;
+      chainStart = null; chainFirstEnd = null; segmentCount = 0;
+      clearGuides();
     }
   });
 
