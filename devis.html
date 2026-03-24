@@ -279,13 +279,19 @@ const COMMERCIAUX = {
 };
 let selectedComm = 'QM';
 
+function updateCommInfo(){
+  const c = COMMERCIAUX[selectedComm];
+  document.getElementById('comm-info').innerHTML =
+    `<strong>${c.nom}</strong> — ${c.fonction}<br>${c.tel} &bull; ${c.email}`;
+}
+
 // ============================================================
 // ÉTAT
 // ============================================================
 let lignesDevis = [];
 let idCounter   = 1;
-let pdfFiles    = [];
-let dessinsImportes = [];
+let pdfFiles    = [];       // tableau de {name, bytes}
+let dessinsImportes = [];   // tableau de {id, nom, notes, date, imageBase64}
 
 // ============================================================
 // INIT
@@ -293,11 +299,13 @@ let dessinsImportes = [];
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('d-date').value   = new Date().toISOString().split('T')[0];
   document.getElementById('d-numero').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+  updateCommInfo();
   document.querySelectorAll('.comm-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.comm-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedComm = btn.dataset.comm;
+      updateCommInfo();
     });
   });
   renderTable();
