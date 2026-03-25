@@ -366,53 +366,51 @@ function saveCalcData(){
 }
 function loadCalcData(){
   const d = getProjectData().calcul;
-  if(!d) return;
-  if(d.categorie){
+  // buildEpBtns doit TOUJOURS être appelé (boutons épaisseur)
+  if(d && d.categorie){
     categorieActive = d.categorie;
     document.querySelectorAll('#cat-btns .cat-btn').forEach(b => {
       b.classList.toggle('active', b.textContent.trim().toLowerCase() === CATEGORIES[d.categorie]?.label?.toLowerCase());
     });
   }
-  if(d.matiere){
+  if(d && d.matiere){
     matiereActive = d.matiere;
     document.querySelectorAll('#mat-btns .mat-btn').forEach(b => {
       b.classList.toggle('active', b.textContent.trim() === MATIERES[d.matiere]?.label);
     });
   }
-  if(d.epaisseur) epaisseurActive = d.epaisseur;
-  buildEpBtns();
+  if(d && d.epaisseur) epaisseurActive = d.epaisseur;
+  buildEpBtns(); // toujours construire les boutons
+  if(!d) return; // sortir si pas de données sauvegardées
   if(d.prixMat) document.getElementById('prix-mat').value = d.prixMat;
   if(d.dvp) document.getElementById('dvp').value = d.dvp;
   if(d.longueur) document.getElementById('longueur').value = d.longueur;
-  if(d.nbCis) document.getElementById('nb-cis').value = d.nbCis;
-  if(d.tCis) document.getElementById('t-cis').value = d.tCis;
-  if(d.nbPli) document.getElementById('nb-pli').value = d.nbPli;
-  if(d.tPli) document.getElementById('t-pli').value = d.tPli;
-  if(d.nbPoinc) document.getElementById('nb-poinc').value = d.nbPoinc;
-  if(d.tPoinc) document.getElementById('t-poinc').value = d.tPoinc;
+  if(d.nbCis !== undefined) document.getElementById('nb-cis').value = d.nbCis;
+  if(d.tCis !== undefined) document.getElementById('t-cis').value = d.tCis;
+  if(d.nbPli !== undefined) document.getElementById('nb-pli').value = d.nbPli;
+  if(d.tPli !== undefined) document.getElementById('t-pli').value = d.tPli;
+  if(d.nbPoinc !== undefined) document.getElementById('nb-poinc').value = d.nbPoinc;
+  if(d.tPoinc !== undefined) document.getElementById('t-poinc').value = d.tPoinc;
   if(d.tauxMoSec) document.getElementById('taux-mo-sec').value = d.tauxMoSec;
-  if(d.stLaquage) document.getElementById('st-laquage').value = d.stLaquage;
-  if(d.stSoudure) document.getElementById('st-soudure').value = d.stSoudure;
-  if(d.stTransp) document.getElementById('st-transp').value = d.stTransp;
+  if(d.stLaquage !== undefined) document.getElementById('st-laquage').value = d.stLaquage;
+  if(d.stSoudure !== undefined) document.getElementById('st-soudure').value = d.stSoudure;
+  if(d.stTransp !== undefined) document.getElementById('st-transp').value = d.stTransp;
   if(d.coefChute) document.getElementById('coef-chute').value = d.coefChute;
   if(d.coefPort) document.getElementById('coef-port').value = d.coefPort;
   if(d.coefMarge) document.getElementById('coef-marge').value = d.coefMarge;
   if(d.addDesig) document.getElementById('add-desig').value = d.addDesig;
   if(d.addRal) document.getElementById('add-ral').value = d.addRal;
   if(d.addQte) document.getElementById('add-qte').value = d.addQte;
-  if(d.dernierResultat) {
+  if(d.dernierResultat && d.dernierResultat.matChute !== undefined){
     dernierResultat = d.dernierResultat;
-    // Restaurer l'affichage des résultats
-    if(dernierResultat.matChute !== undefined){
-      document.getElementById('r-mat').textContent = dernierResultat.matChute.toFixed(2) + ' \u20ac';
-      document.getElementById('r-mo').textContent = dernierResultat.moEuros.toFixed(2) + ' \u20ac';
-      document.getElementById('r-st').textContent = dernierResultat.stTotal.toFixed(2) + ' \u20ac';
-      document.getElementById('r-pr').textContent = dernierResultat.prHT.toFixed(2) + ' \u20ac';
-      document.getElementById('r-pv').textContent = dernierResultat.pvHT.toFixed(2) + ' \u20ac';
-      document.getElementById('r-m2').textContent = dernierResultat.prixM2.toFixed(2) + ' \u20ac/m\u00b2';
-      document.getElementById('r-mgb').textContent = (dernierResultat.mgb * 100).toFixed(1) + ' %';
-      document.getElementById('r-coef-mat').textContent = dernierResultat.coefSurMat.toFixed(3);
-    }
+    document.getElementById('r-mat').textContent = dernierResultat.matChute.toFixed(2) + ' \u20ac';
+    document.getElementById('r-mo').textContent  = dernierResultat.moEuros.toFixed(2) + ' \u20ac';
+    document.getElementById('r-st').textContent  = dernierResultat.stTotal.toFixed(2) + ' \u20ac';
+    document.getElementById('r-pr').textContent  = dernierResultat.prHT.toFixed(2) + ' \u20ac';
+    document.getElementById('r-pv').textContent  = dernierResultat.pvHT.toFixed(2) + ' \u20ac';
+    document.getElementById('r-m2').textContent  = dernierResultat.prixM2.toFixed(2) + ' \u20ac/m\u00b2';
+    document.getElementById('r-mgb').textContent = (dernierResultat.mgb * 100).toFixed(1) + ' %';
+    document.getElementById('r-coef-mat').textContent = dernierResultat.coefSurMat.toFixed(3);
   }
 }
 function showSaveIndicator(){
