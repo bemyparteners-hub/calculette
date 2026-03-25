@@ -403,14 +403,31 @@ function loadCalcData(){
   if(d.addQte) document.getElementById('add-qte').value = d.addQte;
   if(d.dernierResultat && d.dernierResultat.matChute !== undefined){
     dernierResultat = d.dernierResultat;
-    document.getElementById('r-mat').textContent = dernierResultat.matChute.toFixed(2) + ' \u20ac';
-    document.getElementById('r-mo').textContent  = dernierResultat.moEuros.toFixed(2) + ' \u20ac';
-    document.getElementById('r-st').textContent  = dernierResultat.stTotal.toFixed(2) + ' \u20ac';
-    document.getElementById('r-pr').textContent  = dernierResultat.prHT.toFixed(2) + ' \u20ac';
-    document.getElementById('r-pv').textContent  = dernierResultat.pvHT.toFixed(2) + ' \u20ac';
-    document.getElementById('r-m2').textContent  = dernierResultat.prixM2.toFixed(2) + ' \u20ac/m\u00b2';
-    document.getElementById('r-mgb').textContent = (dernierResultat.mgb * 100).toFixed(1) + ' %';
-    document.getElementById('r-coef-mat').textContent = dernierResultat.coefSurMat.toFixed(3);
+    const r = dernierResultat;
+    document.getElementById('r-mat').textContent = r.matChute.toFixed(2) + ' \u20ac';
+    document.getElementById('r-mo').textContent  = r.moEuros.toFixed(2) + ' \u20ac';
+    document.getElementById('r-st').textContent  = r.stTotal.toFixed(2) + ' \u20ac';
+    document.getElementById('r-pr').textContent  = r.prHT.toFixed(2) + ' \u20ac';
+    document.getElementById('r-pv').textContent  = r.pvHT.toFixed(2) + ' \u20ac';
+    document.getElementById('r-m2').textContent  = r.prixM2.toFixed(2) + ' \u20ac/m\u00b2';
+    document.getElementById('r-mgb').textContent = (r.mgb * 100).toFixed(1) + ' %';
+    document.getElementById('r-coef-mat').textContent = r.coefSurMat.toFixed(3);
+    // Restaurer le temps calculé
+    if(r.tempsTotalSec !== undefined){
+      const tMin = Math.floor(r.tempsTotalSec / 60);
+      const tSec = r.tempsTotalSec % 60;
+      document.getElementById('r-temps').value = r.tempsTotalSec < 60
+        ? r.tempsTotalSec + 's'
+        : tMin + 'min ' + tSec + 's';
+    }
+    // Restaurer le badge de marge (bandeau coloré)
+    const badge = document.getElementById('r-delta-badge');
+    const delta = r.pvHT - r.matChute;
+    const baseStyle = 'display:block;border-radius:8px;padding:10px 16px;text-align:center;font-weight:700;font-size:13px;margin-top:8px;';
+    if(r.mgb >= 0.45)       badge.style.cssText = baseStyle + 'background:#dcfce7;color:#166534';
+    else if(r.mgb >= 0.35)  badge.style.cssText = baseStyle + 'background:#fef9c3;color:#854d0e';
+    else                    badge.style.cssText = baseStyle + 'background:#fee2e2;color:#991b1b';
+    badge.textContent = 'Marge brute : ' + (r.mgb*100).toFixed(1) + '% \u2014 Delta mat : ' + delta.toFixed(2) + ' \u20ac';
   }
 }
 function showSaveIndicator(){
@@ -505,7 +522,7 @@ function calculer(){
   const coefSurMat = matChute > 0 ? pvFinal / matChute : 0;
   const mgb        = pvFinal > 0 ? (pvFinal - prHT) / pvFinal : 0;
 
-  dernierResultat = { matChute, moEuros, stTotal, prHT, pvHT:pvFinal, prixM2, coefSurMat, mgb, dvp, lg, surface };
+  dernierResultat = { matChute, moEuros, stTotal, prHT, pvHT:pvFinal, prixM2, coefSurMat, mgb, dvp, lg, surface, tempsTotalSec };
 
   const tMin = Math.floor(tempsTotalSec / 60);
   const tSec = tempsTotalSec % 60;
