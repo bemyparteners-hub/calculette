@@ -662,6 +662,7 @@
       e.stopPropagation();
       el.remove();
       textLabels = textLabels.filter(t => t.id !== id);
+      setTimeout(saveDessinateurData, 80);
     });
     el.appendChild(del);
 
@@ -750,6 +751,7 @@
 
     wrap.appendChild(el);
     textLabels.push(lbl);
+    setTimeout(saveDessinateurData, 80); // sauvegarde après ajout d'un label
   }
 
   // ══════════════════════════════════════════
@@ -815,7 +817,7 @@
 
   // ── Clear ──
   document.getElementById('btnClear').addEventListener('click', () => {
-    if (confirm('Effacer tout le dessin ?')) clearCanvas();
+    if (confirm('Effacer tout le dessin ?')){ clearCanvas(); setTimeout(saveDessinateurData, 80); }
   });
 
   // ══════════════════════════════════════════
@@ -983,15 +985,10 @@
   document.getElementById('refName').addEventListener('input', saveDessinateurData);
   document.getElementById('refNotes').addEventListener('input', saveDessinateurData);
 
-  // Auto-save après chaque trait / action dessin
-  const origEndDraw = endDraw;
-  canvas.removeEventListener('mouseup', origEndDraw);
-  canvas.removeEventListener('mouseleave', origEndDraw);
-  canvas.removeEventListener('touchend', origEndDraw);
-  function endDrawAndSave(e){ origEndDraw(e); if(!drawing) saveDessinateurData(); }
-  canvas.addEventListener('mouseup', endDrawAndSave);
-  canvas.addEventListener('mouseleave', endDrawAndSave);
-  canvas.addEventListener('touchend', endDrawAndSave);
+  // Auto-save après chaque trait — listeners additionnels simples
+  // (le setTimeout garantit qu'ils s'exécutent après endDraw)
+  canvas.addEventListener('mouseup', () => setTimeout(saveDessinateurData, 80));
+  canvas.addEventListener('touchend', () => setTimeout(saveDessinateurData, 80));
 
   // Save quand on change d'outil/couleur/épaisseur
   document.querySelectorAll('[data-tool], .swatch, .stroke-btn').forEach(b => {
