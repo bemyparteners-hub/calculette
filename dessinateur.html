@@ -205,6 +205,11 @@
     </div>
   </div>
 
+  <!-- RESET GLOBAL -->
+  <div class="card" style="text-align:center">
+    <button class="btn-secondary" style="color:#6b7a80;border-color:#dde3e8" onclick="if(confirm('Effacer TOUTE la m\u00e9moire du projet (calculette, devis, dessinateur) ?')){localStorage.removeItem('plialu_project_data');localStorage.removeItem('plialu-devis');localStorage.removeItem('plialu-devis-dessins');location.reload();}">🗑️ Effacer toute m\u00e9moire</button>
+  </div>
+
 </div>
 
 <script>
@@ -909,10 +914,95 @@
     return d.innerHTML;
   }
 
+  // ═══════ SAUVEGARDE AUTOMATIQUE ═══════
+  const SAVE_KEY = 'plialu_project_data';
+
+  function getProjectData(){
+    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch(e){ return {}; }
+  }
+  function showSaveIndicator(){
+    let el = document.getElementById('save-indicator');
+    if(!el){ el = document.createElement('div'); el.id='save-indicator'; el.style.cssText='position:fixed;bottom:20px;right:20px;background:rgba(13,41,51,0.88);color:#e8fc69;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:opacity .35s;pointer-events:none;letter-spacing:.3px'; document.body.appendChild(el); }
+    el.textContent = '\uD83D\uDCBE Projet sauvegard\u00e9';
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+  }
+
+  function saveDessinateurData(){
+    const data = getProjectData();
+    data.dessinateur = {
+      refName: document.getElementById('refName').value,
+      refNotes: document.getElementById('refNotes').value,
+      scale: scale,
+      color: color,
+      lineWidth: lineWidth,
+      tool: tool,
+      textLabels: textLabels.map(l => ({
+        id: l.id, text: l.text, x: l.el.offsetLeft, y: l.el.offsetTop,
+        color: l.color, fontSize: l.fontSize
+      })),
+      canvasData: canvas.toDataURL('image/png')
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    showSaveIndicator();
+  }
+
+  function loadDessinateurData(){
+    const d = getProjectData().dessinateur;
+    if(!d) return;
+    if(d.refName) document.getElementById('refName').value = d.refName;
+    if(d.refNotes) document.getElementById('refNotes').value = d.refNotes;
+    if(d.scale){ scale = d.scale; document.getElementById('scaleInput').value = d.scale; }
+    if(d.color){
+      color = d.color;
+      document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s.dataset.color === d.color));
+    }
+    if(d.lineWidth){
+      lineWidth = d.lineWidth;
+      document.querySelectorAll('.stroke-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.size) === d.lineWidth));
+    }
+    // Restaurer le canvas
+    if(d.canvasData){
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        saveState(); // ajouter dans l'historique pour undo
+      };
+      img.src = d.canvasData;
+    }
+    // Restaurer les labels texte
+    if(d.textLabels && d.textLabels.length){
+      d.textLabels.forEach(l => {
+        createTextLabel(l.text, l.x, l.y + l.fontSize, l.color, l.fontSize);
+      });
+    }
+  }
+
+  // Auto-save sur les champs texte
+  document.getElementById('refName').addEventListener('input', saveDessinateurData);
+  document.getElementById('refNotes').addEventListener('input', saveDessinateurData);
+
+  // Auto-save après chaque trait / action dessin
+  const origEndDraw = endDraw;
+  canvas.removeEventListener('mouseup', origEndDraw);
+  canvas.removeEventListener('mouseleave', origEndDraw);
+  canvas.removeEventListener('touchend', origEndDraw);
+  function endDrawAndSave(e){ origEndDraw(e); if(!drawing) saveDessinateurData(); }
+  canvas.addEventListener('mouseup', endDrawAndSave);
+  canvas.addEventListener('mouseleave', endDrawAndSave);
+  canvas.addEventListener('touchend', endDrawAndSave);
+
+  // Save quand on change d'outil/couleur/épaisseur
+  document.querySelectorAll('[data-tool], .swatch, .stroke-btn').forEach(b => {
+    b.addEventListener('click', () => setTimeout(saveDessinateurData, 50));
+  });
+
   // ── Init ──
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
   fillWhite();
+  loadDessinateurData();
   renderSavedList();
 })();
 </script>
