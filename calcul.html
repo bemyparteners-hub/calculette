@@ -80,6 +80,10 @@ input::placeholder{color:#b0bec5}
 .btn-add:hover{background:#d4f040}
 .msg-ok{background:#dcfce7;color:#166534;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;display:none;margin-top:10px}
 
+#save-indicator{position:fixed;bottom:20px;right:20px;background:rgba(13,41,51,0.88);color:#e8fc69;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:opacity .35s;pointer-events:none;letter-spacing:.3px}
+.btn-reset{background:#fff;color:#6b7a80;border:1.5px solid #dde3e8;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:7px}
+.btn-reset:hover{border-color:#d9534f;color:#d9534f}
+
 @media(max-width:650px){
   .grid2,.grid3,.mo-grid,.coef-section,.result-grid,.add-grid{grid-template-columns:1fr}
 }
@@ -292,7 +296,14 @@ input::placeholder{color:#b0bec5}
   <div class="msg-ok" id="msg-ok">✅ Ligne ajoutée au devis avec succès !</div>
 </div>
 
+<!-- RESET GLOBAL -->
+<div class="card" style="text-align:center">
+  <button class="btn-reset" onclick="if(confirm('Effacer TOUTE la m\u00e9moire du projet (calculette, devis, dessinateur) ?')){localStorage.removeItem('plialu_project_data');localStorage.removeItem('plialu-devis');localStorage.removeItem('plialu-devis-dessins');location.reload();}">🗑️ Effacer toute m\u00e9moire</button>
 </div>
+
+</div>
+
+<div id="save-indicator"></div>
 
 <script>
 const CATEGORIES = {
@@ -317,7 +328,111 @@ let matiereActive   = 'aluminium';
 let epaisseurActive = '15/10';
 let dernierResultat = null;
 
-window.addEventListener('DOMContentLoaded', () => { buildEpBtns(); });
+// ═══════ SAUVEGARDE AUTOMATIQUE ═══════
+const SAVE_KEY = 'plialu_project_data';
+
+function getProjectData(){
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch(e){ return {}; }
+}
+function saveCalcData(){
+  const data = getProjectData();
+  data.calcul = {
+    categorie: categorieActive,
+    matiere: matiereActive,
+    epaisseur: epaisseurActive,
+    prixMat: document.getElementById('prix-mat').value,
+    dvp: document.getElementById('dvp').value,
+    longueur: document.getElementById('longueur').value,
+    nbCis: document.getElementById('nb-cis').value,
+    tCis: document.getElementById('t-cis').value,
+    nbPli: document.getElementById('nb-pli').value,
+    tPli: document.getElementById('t-pli').value,
+    nbPoinc: document.getElementById('nb-poinc').value,
+    tPoinc: document.getElementById('t-poinc').value,
+    tauxMoSec: document.getElementById('taux-mo-sec').value,
+    stLaquage: document.getElementById('st-laquage').value,
+    stSoudure: document.getElementById('st-soudure').value,
+    stTransp: document.getElementById('st-transp').value,
+    coefChute: document.getElementById('coef-chute').value,
+    coefPort: document.getElementById('coef-port').value,
+    coefMarge: document.getElementById('coef-marge').value,
+    addDesig: document.getElementById('add-desig').value,
+    addRal: document.getElementById('add-ral').value,
+    addQte: document.getElementById('add-qte').value,
+    dernierResultat: dernierResultat
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  showSaveIndicator();
+}
+function loadCalcData(){
+  const d = getProjectData().calcul;
+  if(!d) return;
+  if(d.categorie){
+    categorieActive = d.categorie;
+    document.querySelectorAll('#cat-btns .cat-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.trim().toLowerCase() === CATEGORIES[d.categorie]?.label?.toLowerCase());
+    });
+  }
+  if(d.matiere){
+    matiereActive = d.matiere;
+    document.querySelectorAll('#mat-btns .mat-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.trim() === MATIERES[d.matiere]?.label);
+    });
+  }
+  if(d.epaisseur) epaisseurActive = d.epaisseur;
+  buildEpBtns();
+  if(d.prixMat) document.getElementById('prix-mat').value = d.prixMat;
+  if(d.dvp) document.getElementById('dvp').value = d.dvp;
+  if(d.longueur) document.getElementById('longueur').value = d.longueur;
+  if(d.nbCis) document.getElementById('nb-cis').value = d.nbCis;
+  if(d.tCis) document.getElementById('t-cis').value = d.tCis;
+  if(d.nbPli) document.getElementById('nb-pli').value = d.nbPli;
+  if(d.tPli) document.getElementById('t-pli').value = d.tPli;
+  if(d.nbPoinc) document.getElementById('nb-poinc').value = d.nbPoinc;
+  if(d.tPoinc) document.getElementById('t-poinc').value = d.tPoinc;
+  if(d.tauxMoSec) document.getElementById('taux-mo-sec').value = d.tauxMoSec;
+  if(d.stLaquage) document.getElementById('st-laquage').value = d.stLaquage;
+  if(d.stSoudure) document.getElementById('st-soudure').value = d.stSoudure;
+  if(d.stTransp) document.getElementById('st-transp').value = d.stTransp;
+  if(d.coefChute) document.getElementById('coef-chute').value = d.coefChute;
+  if(d.coefPort) document.getElementById('coef-port').value = d.coefPort;
+  if(d.coefMarge) document.getElementById('coef-marge').value = d.coefMarge;
+  if(d.addDesig) document.getElementById('add-desig').value = d.addDesig;
+  if(d.addRal) document.getElementById('add-ral').value = d.addRal;
+  if(d.addQte) document.getElementById('add-qte').value = d.addQte;
+  if(d.dernierResultat) {
+    dernierResultat = d.dernierResultat;
+    // Restaurer l'affichage des résultats
+    if(dernierResultat.matChute !== undefined){
+      document.getElementById('r-mat').textContent = dernierResultat.matChute.toFixed(2) + ' \u20ac';
+      document.getElementById('r-mo').textContent = dernierResultat.moEuros.toFixed(2) + ' \u20ac';
+      document.getElementById('r-st').textContent = dernierResultat.stTotal.toFixed(2) + ' \u20ac';
+      document.getElementById('r-pr').textContent = dernierResultat.prHT.toFixed(2) + ' \u20ac';
+      document.getElementById('r-pv').textContent = dernierResultat.pvHT.toFixed(2) + ' \u20ac';
+      document.getElementById('r-m2').textContent = dernierResultat.prixM2.toFixed(2) + ' \u20ac/m\u00b2';
+      document.getElementById('r-mgb').textContent = (dernierResultat.mgb * 100).toFixed(1) + ' %';
+      document.getElementById('r-coef-mat').textContent = dernierResultat.coefSurMat.toFixed(3);
+    }
+  }
+}
+function showSaveIndicator(){
+  const el = document.getElementById('save-indicator');
+  if(!el) return;
+  el.textContent = '\uD83D\uDCBE Projet sauvegard\u00e9';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+// Auto-save sur changement de tout input
+function initAutoSave(){
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', saveCalcData);
+    el.addEventListener('change', saveCalcData);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => { loadCalcData(); initAutoSave(); });
 
 function buildEpBtns(){
   document.getElementById('ep-btns').innerHTML =
@@ -331,6 +446,7 @@ function setCategorie(key, btn){
   categorieActive = key;
   document.querySelectorAll('#cat-btns .cat-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  saveCalcData();
 }
 
 function setMatiere(key, btn){
@@ -340,12 +456,14 @@ function setMatiere(key, btn){
   btn.classList.add('active');
   buildEpBtns();
   document.getElementById('prix-mat').value = PRIX_BASE[key] ?? 18.54;
+  saveCalcData();
 }
 
 function setEpaisseur(ep, btn){
   epaisseurActive = ep;
   document.querySelectorAll('#ep-btns .ep-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  saveCalcData();
 }
 
 function calculer(){
@@ -423,6 +541,7 @@ function calculer(){
   document.getElementById('add-desig').value = cat + ' ' + Math.round(dvp) + '*' + Math.round(lg);
   document.getElementById('add-ral').value   = ral;
   document.getElementById('add-qte').value   = 1;
+  saveCalcData();
 }
 
 function ajouterAuDevis(){

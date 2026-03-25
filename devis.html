@@ -265,6 +265,11 @@ textarea{resize:vertical;min-height:90px}
     <button class="btn-gen" onclick="genererPDF()">📄 Générer le devis PDF</button>
   </div>
 
+  <!-- RESET GLOBAL -->
+  <div class="card" style="text-align:center">
+    <button style="background:#fff;color:#6b7a80;border:1.5px solid #dde3e8;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s" onmouseover="this.style.borderColor='#d9534f';this.style.color='#d9534f'" onmouseout="this.style.borderColor='#dde3e8';this.style.color='#6b7a80'" onclick="if(confirm('Effacer TOUTE la m\u00e9moire du projet (calculette, devis, dessinateur) ?')){localStorage.removeItem('plialu_project_data');localStorage.removeItem('plialu-devis');localStorage.removeItem('plialu-devis-dessins');location.reload();}">🗑️ Effacer toute m\u00e9moire</button>
+  </div>
+
 </div>
 
 <script>
@@ -290,15 +295,84 @@ let dessinsImportes = [];   // tableau de {id, nom, notes, date, imageBase64}
 // ============================================================
 // INIT
 // ============================================================
+// ═══════ SAUVEGARDE AUTOMATIQUE ═══════
+const SAVE_KEY = 'plialu_project_data';
+
+function getProjectData(){
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch(e){ return {}; }
+}
+function showSaveIndicator(){
+  let el = document.getElementById('save-indicator');
+  if(!el){ el = document.createElement('div'); el.id='save-indicator'; el.style.cssText='position:fixed;bottom:20px;right:20px;background:rgba(13,41,51,0.88);color:#e8fc69;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:opacity .35s;pointer-events:none;letter-spacing:.3px'; document.body.appendChild(el); }
+  el.textContent = '\uD83D\uDCBE Projet sauvegard\u00e9';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+function saveDevisData(){
+  const data = getProjectData();
+  data.devis = {
+    numero: document.getElementById('d-numero').value,
+    date: document.getElementById('d-date').value,
+    validite: document.getElementById('d-validite').value,
+    chantier: document.getElementById('d-chantier').value,
+    ref: document.getElementById('d-ref').value,
+    client: document.getElementById('d-client').value,
+    contact: document.getElementById('d-contact').value,
+    email: document.getElementById('d-email').value,
+    tel: document.getElementById('d-tel').value,
+    adresse: document.getElementById('d-adresse').value,
+    comment: document.getElementById('d-comment').value,
+    selectedComm: selectedComm,
+    lignesDevis: lignesDevis,
+    idCounter: idCounter
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  showSaveIndicator();
+}
+
+function loadDevisData(){
+  const d = getProjectData().devis;
+  if(!d){
+    document.getElementById('d-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('d-numero').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+    return;
+  }
+  if(d.numero) document.getElementById('d-numero').value = d.numero;
+  else document.getElementById('d-numero').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+  document.getElementById('d-date').value = d.date || new Date().toISOString().split('T')[0];
+  if(d.validite) document.getElementById('d-validite').value = d.validite;
+  if(d.chantier) document.getElementById('d-chantier').value = d.chantier;
+  if(d.ref) document.getElementById('d-ref').value = d.ref;
+  if(d.client) document.getElementById('d-client').value = d.client;
+  if(d.contact) document.getElementById('d-contact').value = d.contact;
+  if(d.email) document.getElementById('d-email').value = d.email;
+  if(d.tel) document.getElementById('d-tel').value = d.tel;
+  if(d.adresse) document.getElementById('d-adresse').value = d.adresse;
+  if(d.comment) document.getElementById('d-comment').value = d.comment;
+  if(d.selectedComm){
+    selectedComm = d.selectedComm;
+    document.querySelectorAll('.comm-btn').forEach(b => b.classList.toggle('active', b.dataset.comm === d.selectedComm));
+  }
+  if(d.lignesDevis) lignesDevis = d.lignesDevis;
+  if(d.idCounter) idCounter = d.idCounter;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('d-date').value   = new Date().toISOString().split('T')[0];
-  document.getElementById('d-numero').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*900)+100);
+  loadDevisData();
   document.querySelectorAll('.comm-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.comm-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedComm = btn.dataset.comm;
+      saveDevisData();
     });
+  });
+  // Auto-save sur tous les inputs/textareas
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', saveDevisData);
+    el.addEventListener('change', saveDevisData);
   });
   renderTable();
 });
@@ -325,6 +399,7 @@ function importerDepuisCalculette(){
   });
   localStorage.removeItem('plialu-devis');
   renderTable();
+  saveDevisData();
   const msg = document.getElementById('msg-import');
   msg.style.display = 'block';
   setTimeout(()=>msg.style.display='none', 3000);
@@ -393,6 +468,7 @@ function ajouterLigneManuelle(){
     ral:'', ep:'15/10', dvp:'', lg:3000, qte:1, puHT:0
   });
   renderTable();
+  saveDevisData();
 }
 
 // ============================================================
@@ -401,6 +477,7 @@ function ajouterLigneManuelle(){
 function supprimerLigne(id){
   lignesDevis = lignesDevis.filter(l => l.id !== id);
   renderTable();
+  saveDevisData();
 }
 
 // ============================================================
@@ -415,6 +492,7 @@ function updateLigne(id, champ, val){
   const totalEl = document.getElementById('total-ligne-'+id);
   if(totalEl) totalEl.textContent = (l.qte * l.puHT).toFixed(2)+' €';
   updateTotaux();
+  saveDevisData();
 }
 
 // ============================================================
