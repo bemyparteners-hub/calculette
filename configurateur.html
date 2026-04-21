@@ -456,5 +456,259 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
 
 <div id="save-indicator"></div>
 
+<script>
+(() => {
+// ══════════════════════════════════════════
+// DONNÉES MÉTIER
+// ══════════════════════════════════════════
+const GAMMES = {
+  bavette:   { label:'Bavette',    articles:{
+    Bv1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Bv2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    Bv3:{ plis:3, faces:['A','B','C','D'],        angles:['pliA','pliB','pliC'] },
+    Bv4:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }},
+  couvertine:{ label:'Couvertine', articles:{
+    Cv1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    Cv2:{ plis:3, faces:['A','B','C','D'],        angles:['pliA','pliB','pliC'] },
+    Cv3:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }},
+  corniere:  { label:'Cornière',   articles:{
+    Co1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Co2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
+  }},
+  chapeau:   { label:'Chapeau',    articles:{
+    Ch1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    Ch2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }},
+  noue:      { label:'Noue',       articles:{
+    No1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    No2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }},
+  faitage:   { label:'Faîtage',    articles:{
+    Fa1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    Fa2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }},
+  habillage: { label:'Habillage',  articles:{
+    Ha1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Ha2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
+  }},
+  autres:    { label:'Autres',     articles:{
+    Au1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Au2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
+    Au3:{ plis:3, faces:['A','B','C','D'],        angles:['pliA','pliB','pliC'] },
+    Au4:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  }}
+};
+
+const MATIERES = {
+  'AC75-7032': { label:'Laqué RAL 7032',   tarifM2:18.50 },
+  'AC75-9010': { label:'Laqué RAL 9010',   tarifM2:18.50 },
+  'AC75-7016': { label:'Laqué RAL 7016',   tarifM2:18.50 },
+  'AC75-9006': { label:'Laqué RAL 9006',   tarifM2:18.50 },
+  'AC75-AUTRE':{ label:'Laqué autre RAL',  tarifM2:19.00 },
+  'ALU-BRUT':  { label:'Aluminium brut',   tarifM2:14.00 },
+  'ALU-ANOD':  { label:'Aluminium anodisé',tarifM2:22.00 },
+  'INOX-304':  { label:'Inox 304',         tarifM2:32.00 },
+  'AUTRE':     { label:'Autre matière',    tarifM2: 0    }
+};
+
+const EPAISSEURS = {
+  '0.6':  { label:'0,6 mm',  mm:0.6,  coeff:0.85 },
+  '0.75': { label:'0,75 mm', mm:0.75, coeff:1.00 },
+  '1.0':  { label:'1,0 mm',  mm:1.0,  coeff:1.15 },
+  '1.2':  { label:'1,2 mm',  mm:1.2,  coeff:1.25 },
+  '1.5':  { label:'1,5 mm',  mm:1.5,  coeff:1.40 },
+  '2.0':  { label:'2,0 mm',  mm:2.0,  coeff:1.65 }
+};
+
+// ══════════════════════════════════════════
+// ÉTAT
+// ══════════════════════════════════════════
+let activeGamme   = 'bavette';
+let activeArticle = 'Bv1';
+const SESSION_KEY = 'plialu-configurateur-session';
+
+// ══════════════════════════════════════════
+// INIT SELECTS depuis les données
+// ══════════════════════════════════════════
+function initSelects() {
+  document.getElementById('paramMatiere').innerHTML =
+    Object.entries(MATIERES).map(([k,v]) =>
+      `<option value="${k}">${v.label}</option>`).join('');
+  document.getElementById('paramEpaisseur').innerHTML =
+    Object.entries(EPAISSEURS).map(([k,v]) =>
+      `<option value="${k}"${k==='0.75'?' selected':''}>${v.label}</option>`).join('');
+}
+
+// ══════════════════════════════════════════
+// MISE À JOUR DU PANNEAU ARTICLES
+// ══════════════════════════════════════════
+function updateArticleTabs(gammeKey) {
+  const g = GAMMES[gammeKey];
+  document.getElementById('articlePanelTitle').textContent = 'Articles — ' + g.label;
+  document.getElementById('articleTabs').innerHTML =
+    Object.entries(g.articles).map(([k,a]) =>
+      `<button class="article-btn" data-article="${k}">${k}<small>${a.plis} pli${a.plis>1?'s':''}</small></button>`
+    ).join('');
+  document.querySelectorAll('.article-btn').forEach(btn =>
+    btn.addEventListener('click', () => selectArticle(btn.dataset.article))
+  );
+}
+
+// ══════════════════════════════════════════
+// ACTIVATION / DÉSACTIVATION DES CHAMPS
+// ══════════════════════════════════════════
+function updateFields(articleKey) {
+  const art = GAMMES[activeGamme].articles[articleKey];
+  ['A','B','C','D','E'].forEach(f => {
+    const on  = art.faces.includes(f);
+    const wrap = document.getElementById('field' + f);
+    const inp  = document.getElementById('saisie' + f);
+    wrap.classList.toggle('dim-off', !on);
+    inp.disabled = !on;
+    if (!on) inp.value = '';
+  });
+  ['pliA','pliB','pliC','pliD'].forEach(a => {
+    const on   = art.angles.includes(a);
+    const key  = a[0].toUpperCase() + a.slice(1); // pliA → PliA
+    const wrap = document.getElementById('field' + key);
+    const inp  = document.getElementById('saisie' + key);
+    wrap.classList.toggle('dim-off', !on);
+    inp.disabled = !on;
+    if (!on) inp.value = '';
+    else if (!inp.value) inp.value = '90';
+  });
+  document.getElementById('isoBadge').textContent =
+    articleKey + ' — ' + art.plis + ' pli' + (art.plis>1?'s':'');
+}
+
+// ══════════════════════════════════════════
+// APPLY STATE — synchronise le DOM avec l'état
+// ══════════════════════════════════════════
+function applyState() {
+  document.querySelectorAll('.gamme-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.gamme === activeGamme));
+  updateArticleTabs(activeGamme);
+  updateFields(activeArticle);
+  document.querySelectorAll('.article-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.article === activeArticle));
+}
+
+// ══════════════════════════════════════════
+// SÉLECTIONS
+// ══════════════════════════════════════════
+function selectGamme(key) {
+  if (!GAMMES[key]) return;
+  activeGamme   = key;
+  activeArticle = Object.keys(GAMMES[key].articles)[0];
+  applyState();
+  saveSession();
+}
+
+function selectArticle(key) {
+  if (!GAMMES[activeGamme].articles[key]) return;
+  activeArticle = key;
+  updateFields(key);
+  document.querySelectorAll('.article-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.article === key));
+  saveSession();
+}
+
+// Gamme buttons (HTML statique)
+document.querySelectorAll('.gamme-btn').forEach(btn =>
+  btn.addEventListener('click', () => selectGamme(btn.dataset.gamme))
+);
+
+// ══════════════════════════════════════════
+// SAVE / LOAD LOCALSTORAGE
+// ══════════════════════════════════════════
+function saveSession() {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      gamme: activeGamme, article: activeArticle,
+      matiere:    document.getElementById('paramMatiere').value,
+      epaisseur:  document.getElementById('paramEpaisseur').value,
+      ral:        document.getElementById('paramRal').value,
+      qte:        document.getElementById('paramQte').value,
+      tauxMo:     document.getElementById('paramTauxMo').value,
+      coefMarge:  document.getElementById('paramCoefMarge').value,
+      repere:     document.getElementById('saisieRepere').value,
+      lg:         document.getElementById('saisieLg').value,
+      A:  document.getElementById('saisieA').value,
+      B:  document.getElementById('saisieB').value,
+      C:  document.getElementById('saisieC').value,
+      D:  document.getElementById('saisieD').value,
+      E:  document.getElementById('saisieE').value,
+      pliA: document.getElementById('saisiePliA').value,
+      pliB: document.getElementById('saisiePliB').value,
+      pliC: document.getElementById('saisiePliC').value,
+      pliD: document.getElementById('saisiePliD').value
+    }));
+    showSaveIndicator();
+  } catch(e) {}
+}
+
+function loadSession() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) {}
+  if (!s) return;
+  if (s.gamme   && GAMMES[s.gamme])                       activeGamme   = s.gamme;
+  if (s.article && GAMMES[activeGamme].articles[s.article]) activeArticle = s.article;
+  applyState();
+  // Restaurer les valeurs (seulement sur les champs actifs)
+  const vals = {
+    paramMatiere:s.matiere, paramEpaisseur:s.epaisseur,
+    paramRal:s.ral, paramQte:s.qte,
+    paramTauxMo:s.tauxMo, paramCoefMarge:s.coefMarge,
+    saisieRepere:s.repere, saisieLg:s.lg,
+    saisieA:s.A, saisieB:s.B, saisieC:s.C, saisieD:s.D, saisieE:s.E,
+    saisiePliA:s.pliA, saisiePliB:s.pliB, saisiePliC:s.pliC, saisiePliD:s.pliD
+  };
+  Object.entries(vals).forEach(([id, val]) => {
+    if (val == null || val === '') return;
+    const el = document.getElementById(id);
+    if (el && !el.disabled) el.value = val;
+  });
+}
+
+// Auto-save sur tout input / change
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input',  saveSession);
+  el.addEventListener('change', saveSession);
+});
+
+// ══════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════
+document.getElementById('btnResetMemoire').addEventListener('click', () => {
+  if (!confirm('Effacer toute la mémoire du projet ?')) return;
+  [SESSION_KEY,'plialu_project_data','plialu-devis','plialu-devis-dessins']
+    .forEach(k => localStorage.removeItem(k));
+  location.reload();
+});
+
+// ══════════════════════════════════════════
+// INDICATEUR DE SAUVEGARDE
+// ══════════════════════════════════════════
+function showSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.textContent = '💾 Sauvegardé';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+initSelects();   // 1. peupler les <select> depuis les données
+applyState();    // 2. état par défaut (bavette / Bv1)
+loadSession();   // 3. écraser avec session sauvegardée si elle existe
+
+})();
+</script>
+
 </body>
 </html>
