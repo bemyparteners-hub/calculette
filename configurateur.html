@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLIALU — Configurateur</title>
+<style>
+/* ── RESET & BASE ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#1a2e38;min-height:100vh}
+
+/* ── NAV (identique calcul.html) ── */
+.nav{background:#0d2933;padding:0 24px;display:flex;align-items:center;gap:8px;height:52px;position:sticky;top:0;z-index:100}
+.nav-logo{color:#e8fc69;font-weight:800;font-size:17px;margin-right:16px;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.nav-logo span{background:#e8fc69;color:#0d2933;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.nav-btn{background:transparent;border:none;color:#a0bcc4;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s;text-decoration:none;display:inline-flex;align-items:center}
+.nav-btn:hover{color:#fff}
+.nav-btn.active{background:#e8fc69;color:#0d2933}
+
+/* ── PAGE ── */
+.page{max-width:1200px;margin:24px auto;padding:0 16px}
+.page-header{margin-bottom:16px}
+.page-header h1{font-size:20px;font-weight:800;color:#0d2933}
+.page-header p{font-size:13px;color:#6b7a80;margin-top:4px}
+
+/* ── CARD ── */
+.card{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-title{font-size:12px;font-weight:800;color:#1a2e38;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e8fc69;display:flex;align-items:center;justify-content:space-between}
+
+/* ── FORM BASE ── */
+label{display:block;font-size:10px;font-weight:700;color:#6b7a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+input,select{width:100%;padding:9px 11px;border:1.5px solid #dde3e8;border-radius:8px;font-size:14px;background:#fff;color:#1a2e38;transition:border .2s;font-family:'Segoe UI',sans-serif}
+input:focus,select:focus{outline:none;border-color:#0d2933}
+input::placeholder{color:#b0bec5}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button{opacity:.5}
+
+/* ── 3-PANNEAU LAYOUT ── */
+.cfg-layout{display:grid;grid-template-columns:210px 1fr 230px;gap:14px;align-items:start;margin-bottom:16px}
+
+/* ── PANNEAU GAMMES ── */
+.gamme-list{display:flex;flex-direction:column;gap:4px}
+.gamme-btn{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc;color:#1a2e38;font-size:13px;font-weight:600;text-align:left;transition:.15s;width:100%}
+.gamme-btn:hover{border-color:#0d2933;background:#eef3f5}
+.gamme-btn.active{background:#0d2933;border-color:#0d2933;color:#e8fc69}
+.gamme-thumb{flex-shrink:0;width:42px;height:32px;display:flex;align-items:center;justify-content:center}
+.gamme-thumb svg{overflow:visible}
+.gamme-btn:not(.active) .gamme-thumb svg{stroke:#4a6572}
+.gamme-btn.active .gamme-thumb svg{stroke:#e8fc69}
+.gamme-label{flex:1;min-width:0}
+.gamme-label strong{display:block;font-size:12px;font-weight:700}
+.gamme-label span{display:block;font-size:10px;opacity:.7;margin-top:1px}
+
+/* ── PANNEAU ARTICLES ── */
+.panel-articles{display:flex;flex-direction:column;gap:0}
+.article-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.article-btn{padding:6px 14px;border:1.5px solid #dde3e8;border-radius:20px;cursor:pointer;font-size:12px;font-weight:700;background:#f8fafc;color:#1a2e38;transition:.15s;text-align:center;line-height:1.3}
+.article-btn:hover{border-color:#0d2933}
+.article-btn.active{background:#e8fc69;border-color:#0d2933;color:#0d2933}
+.article-btn small{display:block;font-size:10px;font-weight:600;opacity:.65;margin-top:1px}
+.iso-wrap{position:relative;background:#fafbfc;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;flex:1;height:280px;display:flex;align-items:center;justify-content:center}
+#isoCanvas{display:block;width:100%;height:100%}
+.iso-placeholder{color:#b0bec5;font-size:12px;font-weight:600;text-align:center;pointer-events:none}
+.iso-badge{position:absolute;top:8px;right:8px;background:rgba(13,41,51,.8);color:#e8fc69;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:.3px}
+
+/* ── PANNEAU PARAMÈTRES ── */
+.param-sep{height:1px;background:#f0f4f8;margin:12px 0}
+.param-field{margin-bottom:12px}
+.param-field:last-child{margin-bottom:0}
+
+/* ── SAISIES ── */
+.saisies-row{display:grid;grid-template-columns:1fr 160px;gap:12px;margin-bottom:14px}
+.saisies-section{margin-bottom:14px}
+.saisies-section-lbl{font-size:10px;font-weight:800;color:#6b7a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.saisies-section-lbl::after{content:'';flex:1;height:1px;background:#eef1f4}
+.faces-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.angles-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+/* Champ avec unité */
+.field-unit{position:relative}
+.field-unit input{padding-right:36px}
+.field-unit .unit{position:absolute;right:10px;bottom:10px;font-size:10px;font-weight:700;color:#9ab0b8;pointer-events:none;font-family:'Segoe UI',sans-serif}
+/* Champ désactivé (face/angle non applicable) */
+.dim-off label{color:#c8d5d9}
+.dim-off input{background:#f8fafc;color:#c8d5d9;border-style:dashed;cursor:not-allowed}
+
+/* ── RÉSULTATS ── */
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.result-box{background:#f8fafc;border-radius:8px;padding:14px;text-align:center;border:1.5px solid #e2e8f0}
+.result-box .lbl{font-size:10px;font-weight:700;color:#6b7a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.result-box .val{font-size:15px;font-weight:800;color:#0d2933}
+.result-box.highlight{background:#0d2933;border-color:#0d2933}
+.result-box.highlight .lbl{color:#a0bcc4}
+.result-box.highlight .val{color:#e8fc69;font-size:20px}
+
+/* ── ACTIONS ── */
+.actions-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-primary{background:#e8fc69;color:#0d2933;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:800;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:7px;font-family:'Segoe UI',sans-serif}
+.btn-primary:hover{background:#d4f040;transform:translateY(-1px)}
+.btn-secondary{background:#fff;color:#0d2933;border:1.5px solid #dde3e8;border-radius:8px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:7px;font-family:'Segoe UI',sans-serif}
+.btn-secondary:hover{border-color:#0d2933}
+.btn-reset{background:#fff;color:#6b7a80;border:1.5px solid #dde3e8;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:7px;font-family:'Segoe UI',sans-serif}
+.btn-reset:hover{border-color:#d9534f;color:#d9534f}
+.msg-ok{background:#dcfce7;color:#166534;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;display:none;align-items:center;gap:6px}
+
+/* ── SAVE INDICATOR ── */
+#save-indicator{position:fixed;bottom:20px;right:20px;background:rgba(13,41,51,.88);color:#e8fc69;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:opacity .35s;pointer-events:none;letter-spacing:.3px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .cfg-layout{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .panel-gammes{grid-column:1/3;grid-row:2}
+  .gamme-list{flex-direction:row;flex-wrap:wrap}
+  .gamme-btn{width:auto;flex:1;min-width:110px}
+  .panel-articles{grid-column:1/2;grid-row:1}
+  .panel-params{grid-column:2/3;grid-row:1}
+  .faces-grid{grid-template-columns:repeat(3,1fr)}
+  .angles-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .cfg-layout{grid-template-columns:1fr}
+  .panel-articles,.panel-params,.panel-gammes{grid-column:1;grid-row:auto}
+  .saisies-row{grid-template-columns:1fr}
+  .faces-grid,.angles-grid{grid-template-columns:repeat(2,1fr)}
+  .result-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="https://ghayth-plialu.github.io/" style="text-decoration:none">
+    <div class="nav-logo"><span>o</span> PLIALU</div>
+  </a>
+  <a class="nav-btn" href="calcul.html">Calculette</a>
+  <a class="nav-btn" href="devis.html">Devis</a>
+  <a class="nav-btn" href="dessinateur.html">Dessinateur</a>
+  <a class="nav-btn active" href="configurateur.html">Configurateur</a>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <h1>⚙️ Configurateur de pièces</h1>
+    <p>Sélectionnez une gamme, un article, renseignez les cotes — le DVP et le prix se calculent automatiquement.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       3 PANNEAUX
+  ══════════════════════════════════════ -->
+  <div class="cfg-layout">
+
+    <!-- ── PANNEAU GAMMES ── -->
+    <div class="card panel-gammes" style="padding:14px">
+      <div class="card-title">Gammes</div>
+      <div class="gamme-list" id="gammeList">
+
+        <button class="gamme-btn active" data-gamme="bavette">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,8 26,8 26,26"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Bavette</strong><span>Bv1 … Bv4</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="couvertine">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,26 4,10 21,10 21,6 38,6 38,10 38,26"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Couvertine</strong><span>Cv1 … Cv3</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="corniere">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="8,6 8,26 34,26"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Cornière</strong><span>Cr1 … Cr2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="chapeau">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,26 4,16 12,16 12,8 30,8 30,16 38,16 38,26"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Chapeau</strong><span>Ch1 … Ch2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="noue">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,8 21,26 38,8"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Noue</strong><span>No1 … No2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="faitage">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,26 21,8 38,26"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Faîtage</strong><span>Fa1 … Fa2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="habillage">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,16 34,16 34,26"/>
+              <polyline points="4,16 4,8"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Habillage</strong><span>Ha1 … Ha2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="autres">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4,22 14,10 24,22 34,10"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Autres</strong><span>Pièce libre</span></div>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── PANNEAU ARTICLES + VUE ISO ── -->
+    <div class="card panel-articles">
+      <div class="card-title">
+        <span id="articlePanelTitle">Articles — Bavette</span>
+      </div>
+
+      <!-- Sélecteur d'article (pills) -->
+      <div class="article-tabs" id="articleTabs">
+        <button class="article-btn active" data-article="Bv1">Bv1<small>1 pli</small></button>
+        <button class="article-btn" data-article="Bv2">Bv2<small>2 plis</small></button>
+        <button class="article-btn" data-article="Bv3">Bv3<small>3 plis</small></button>
+        <button class="article-btn" data-article="Bv4">Bv4<small>4 plis</small></button>
+      </div>
+
+      <!-- Vue isométrique canvas -->
+      <div class="iso-wrap">
+        <canvas id="isoCanvas"></canvas>
+        <div class="iso-badge" id="isoBadge">Bv1 — 1 pli</div>
+      </div>
+    </div>
+
+    <!-- ── PANNEAU PARAMÈTRES ── -->
+    <div class="card panel-params">
+      <div class="card-title">Paramètres</div>
+
+      <div class="param-field">
+        <label for="paramMatiere">Matière</label>
+        <select id="paramMatiere">
+          <option value="alu_laque">ALU Laqué</option>
+          <option value="alu_brut">ALU Brut</option>
+          <option value="alu_anodise">ALU Anodisé</option>
+          <option value="ac_galva">AC Galvanisé</option>
+          <option value="ac_laque">AC Laqué</option>
+          <option value="inox_304">Inox 304</option>
+          <option value="inox_316">Inox 316</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+
+      <div class="param-field">
+        <label for="paramEpaisseur">Épaisseur</label>
+        <select id="paramEpaisseur">
+          <option value="0.6">0,6 mm</option>
+          <option value="0.75" selected>0,75 mm</option>
+          <option value="1.0">1,0 mm</option>
+          <option value="1.2">1,2 mm</option>
+          <option value="1.5">1,5 mm</option>
+          <option value="2.0">2,0 mm</option>
+        </select>
+      </div>
+
+      <div class="param-sep"></div>
+
+      <div class="param-field">
+        <label for="paramRal">Finition / RAL</label>
+        <input type="text" id="paramRal" placeholder="ex: RAL 7016">
+      </div>
+
+      <div class="param-field">
+        <label for="paramQte">Quantité</label>
+        <div class="field-unit">
+          <input type="number" id="paramQte" value="1" min="1" step="1">
+          <span class="unit">u.</span>
+        </div>
+      </div>
+
+      <div class="param-sep"></div>
+
+      <div class="param-field">
+        <label for="paramTauxMo">Taux MO (€/s)</label>
+        <input type="number" id="paramTauxMo" value="0.017" step="0.001">
+      </div>
+
+      <div class="param-field">
+        <label for="paramCoefMarge">Coeff marge</label>
+        <input type="number" id="paramCoefMarge" value="0.65" step="0.01" min="0.1" max="1">
+      </div>
+    </div>
+
+  </div><!-- /cfg-layout -->
+
+
+  <!-- ══════════════════════════════════════
+       SAISIES — Cotes et dimensions
+  ══════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Saisies — Cotes &amp; Longueur</div>
+
+    <!-- Repère + Longueur -->
+    <div class="saisies-row">
+      <div>
+        <label for="saisieRepere">Repère / Référence</label>
+        <input type="text" id="saisieRepere" placeholder="ex: BA10, CV-RDC-nord…">
+      </div>
+      <div>
+        <label for="saisieLg">Longueur</label>
+        <div class="field-unit">
+          <input type="number" id="saisieLg" placeholder="ex: 3000" min="1">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faces A B C D E -->
+    <div class="saisies-section">
+      <div class="saisies-section-lbl">Faces (développé)</div>
+      <div class="faces-grid">
+
+        <div class="field-unit" id="fieldA">
+          <label for="saisieA">Face A</label>
+          <input type="number" id="saisieA" placeholder="340" min="0">
+          <span class="unit">mm</span>
+        </div>
+
+        <div class="field-unit" id="fieldB">
+          <label for="saisieB">Face B</label>
+          <input type="number" id="saisieB" placeholder="30" min="0">
+          <span class="unit">mm</span>
+        </div>
+
+        <div class="field-unit" id="fieldC">
+          <label for="saisieC">Face C</label>
+          <input type="number" id="saisieC" placeholder="10" min="0">
+          <span class="unit">mm</span>
+        </div>
+
+        <div class="field-unit dim-off" id="fieldD">
+          <label for="saisieD">Face D</label>
+          <input type="number" id="saisieD" placeholder="—" min="0" disabled>
+          <span class="unit">mm</span>
+        </div>
+
+        <div class="field-unit dim-off" id="fieldE">
+          <label for="saisieE">Face E</label>
+          <input type="number" id="saisieE" placeholder="—" min="0" disabled>
+          <span class="unit">mm</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Angles de pli -->
+    <div class="saisies-section" style="margin-bottom:0">
+      <div class="saisies-section-lbl">Angles de pli</div>
+      <div class="angles-grid">
+
+        <div class="field-unit" id="fieldPliA">
+          <label for="saisiePliA">∠ pli A</label>
+          <input type="number" id="saisiePliA" value="90" min="1" max="179">
+          <span class="unit">°</span>
+        </div>
+
+        <div class="field-unit" id="fieldPliB">
+          <label for="saisiePliB">∠ pli B</label>
+          <input type="number" id="saisiePliB" value="90" min="1" max="179">
+          <span class="unit">°</span>
+        </div>
+
+        <div class="field-unit dim-off" id="fieldPliC">
+          <label for="saisiePliC">∠ pli C</label>
+          <input type="number" id="saisiePliC" placeholder="—" min="1" max="179" disabled>
+          <span class="unit">°</span>
+        </div>
+
+        <div class="field-unit dim-off" id="fieldPliD">
+          <label for="saisiePliD">∠ pli D</label>
+          <input type="number" id="saisiePliD" placeholder="—" min="1" max="179" disabled>
+          <span class="unit">°</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       RÉSULTATS
+  ══════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Résultats calculés</div>
+    <div class="result-grid">
+
+      <div class="result-box highlight">
+        <div class="lbl">DVP calculé</div>
+        <div class="val" id="resDvp">—</div>
+      </div>
+
+      <div class="result-box">
+        <div class="lbl">Surface (×qté)</div>
+        <div class="val" id="resSurface">—</div>
+      </div>
+
+      <div class="result-box highlight">
+        <div class="lbl">Prix unitaire HT</div>
+        <div class="val" id="resPrixUnit">—</div>
+      </div>
+
+      <div class="result-box">
+        <div class="lbl">Prix total HT</div>
+        <div class="val" id="resPrixTotal">—</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       ACTIONS
+  ══════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Actions</div>
+    <div class="actions-row">
+      <button class="btn-primary" id="btnAjouterDevis">➕ Ajouter au devis</button>
+      <button class="btn-secondary" id="btnTelechargerPng">📥 Télécharger vue ISO</button>
+      <div class="msg-ok" id="msgOk">✅ Ajouté au devis !</div>
+    </div>
+  </div>
+
+  <!-- ── RESET ── -->
+  <div class="card" style="text-align:center">
+    <button class="btn-reset" id="btnResetMemoire">🗑️ Effacer toute mémoire</button>
+  </div>
+
+</div><!-- /page -->
+
+<div id="save-indicator"></div>
+
+</body>
+</html>
