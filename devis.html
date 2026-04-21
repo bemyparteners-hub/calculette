@@ -663,8 +663,12 @@ async function genererPDF(){
   y = 80;
 
   // ── TABLEAU LIGNES ──
+  const ISO_W  = 22;  // largeur image ISO en mm
+  const ISO_H  = 13;  // hauteur image ISO en mm
+  const CPAD   = 3;   // cell padding (identique à styles.cellPadding)
+
   const rows = lignesDevis.map(l => [
-    l.designation,
+    l.canvasImage ? '' : l.designation, // vidé si image — redessiné via hook
     buildRef(l.matiere, l.ep, l.ral),
     l.dvp ? String(l.dvp) : '',
     l.lg  ? String(l.lg)  : '',
@@ -677,7 +681,7 @@ async function genererPDF(){
     startY: y,
     head: [['Désignation','Réf. Mat.','DVP (mm)','Lg (mm)','Qté','PU HT','Total HT']],
     body: rows,
-    styles:      { fontSize:8, cellPadding:3 },
+    styles:      { fontSize:8, cellPadding:CPAD },
     headStyles:  { fillColor:[13,41,51], textColor:[232,252,105], fontStyle:'bold' },
     alternateRowStyles: { fillColor:[248,250,252] },
     columnStyles: {
@@ -688,6 +692,36 @@ async function genererPDF(){
       4: { cellWidth:12 },
       5: { cellWidth:22 },
       6: { cellWidth:24 }
+    },
+    didParseCell(data) {
+      // Force une hauteur de ligne suffisante pour contenir l'image
+      if (data.section === 'body' && data.column.index === 0 &&
+          lignesDevis[data.row.index] && lignesDevis[data.row.index].canvasImage) {
+        data.cell.styles.minCellHeight = ISO_H + CPAD * 2;
+      }
+    },
+    didDrawCell(data) {
+      if (data.section !== 'body' || data.column.index !== 0) return;
+      const l = lignesDevis[data.row.index];
+      if (!l || !l.canvasImage) return;
+
+      // Image ISO centrée verticalement dans la cellule
+      const ix = data.cell.x + CPAD;
+      const iy = data.cell.y + (data.cell.height - ISO_H) / 2;
+      try {
+        doc.addImage(l.canvasImage, 'PNG', ix, iy, ISO_W, ISO_H);
+      } catch(e) { /* image corrompue, on ignore */ }
+
+      // Texte désignation à droite de l'image
+      const tx   = ix + ISO_W + 2;
+      const tw   = data.cell.width - ISO_W - CPAD * 2 - 2;
+      const ty   = data.cell.y + CPAD + 3.5;
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(13, 41, 51);
+      doc.splitTextToSize(l.designation, tw).forEach((line, i) => {
+        doc.text(line, tx, ty + i * 4);
+      });
     }
   });
 
