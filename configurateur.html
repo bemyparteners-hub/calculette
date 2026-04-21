@@ -91,6 +91,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
 .result-box.highlight{background:#0d2933;border-color:#0d2933}
 .result-box.highlight .lbl{color:#a0bcc4}
 .result-box.highlight .val{color:#e8fc69;font-size:20px}
+.result-box.has-value{border-color:#cbff00;border-width:2px}
 
 /* ── ACTIONS ── */
 .actions-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -433,6 +434,12 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
       </div>
 
     </div>
+
+    <div style="margin-top:12px">
+      <label for="result-designation">Désignation générée</label>
+      <input type="text" id="result-designation" readonly placeholder="Sélectionnez un article et saisissez les cotes…"
+             style="background:#f8fafc;font-size:12px;font-weight:600;color:#1a2e38">
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════
@@ -594,6 +601,7 @@ function applyState() {
   document.querySelectorAll('.article-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.article === activeArticle));
   drawIso();
+  calculeResultats();
 }
 
 // ══════════════════════════════════════════
@@ -673,10 +681,10 @@ function loadSession() {
   });
 }
 
-// Auto-save + redraw sur tout input / change
+// Auto-save + redraw + calcul sur tout input / change
 document.querySelectorAll('input, select').forEach(el => {
-  el.addEventListener('input',  () => { saveSession(); drawIso(); });
-  el.addEventListener('change', () => { saveSession(); drawIso(); });
+  el.addEventListener('input',  () => { saveSession(); drawIso(); calculeResultats(); });
+  el.addEventListener('change', () => { saveSession(); drawIso(); calculeResultats(); });
 });
 
 // Redraw au resize (recalcule la taille du canvas)
@@ -702,6 +710,82 @@ function showSaveIndicator() {
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+// ══════════════════════════════════════════
+// CALCULS DVP + PRIX
+// ══════════════════════════════════════════
+let _calcTimer = null;
+function calculeResultats() {
+  clearTimeout(_calcTimer);
+  _calcTimer = setTimeout(_doCalculer, 150);
+}
+
+function _doCalculer() {
+  const art       = GAMMES[activeGamme].articles[activeArticle];
+  const faceVals  = art.faces.map(f =>
+    parseFloat(document.getElementById('saisie' + f).value) || 0);
+  const angleVals = art.angles.map(a => {
+    const key = a[0].toUpperCase() + a.slice(1);
+    return parseFloat(document.getElementById('saisie' + key).value) || 90;
+  });
+  const Lg        = parseFloat(document.getElementById('saisieLg').value)       || 0;
+  const epKey     = document.getElementById('paramEpaisseur').value;
+  const matKey    = document.getElementById('paramMatiere').value;
+  const qte       = Math.max(1, parseInt(document.getElementById('paramQte').value) || 1);
+  const coefMarge = parseFloat(document.getElementById('paramCoefMarge').value)  || 0.65;
+
+  const ep  = EPAISSEURS[epKey] || { mm:0.75, coeff:1.0 };
+  const mat = MATIERES[matKey]  || { tarifM2:0, label:'?' };
+
+  const elDvp  = document.getElementById('resDvp');
+  const elSurf = document.getElementById('resSurface');
+  const elPU   = document.getElementById('resPrixUnit');
+  const elPT   = document.getElementById('resPrixTotal');
+  const elDesg = document.getElementById('result-designation');
+  const boxes  = [elDvp, elSurf, elPU, elPT]
+    .map(el => el && el.closest('.result-box')).filter(Boolean);
+
+  // ── Reset helpers ──
+  const reset = () => {
+    [elDvp, elSurf, elPU, elPT].forEach(el => { if (el) el.textContent = '—'; });
+    boxes.forEach(b => b.classList.remove('has-value'));
+    if (elDesg) elDesg.value = '';
+  };
+
+  const DVPsum = faceVals.reduce((s, v) => s + v, 0);
+  if (DVPsum === 0 || Lg === 0) { reset(); return; }
+
+  // ── DVP = somme faces − pertes aux plis ──
+  // perte_par_pli = ép_mm × (angle / 90) × 0.4
+  const pertes = angleVals.reduce((s, a) => s + ep.mm * (a / 90) * 0.4, 0);
+  const DVP    = Math.max(0, DVPsum - pertes);
+
+  // ── Surface (m²) ──
+  const surf = (DVP / 1000) * (Lg / 1000);
+
+  // ── Prix unitaire HT ──
+  // Formule cohérente avec calcul.html : PV = coût / coeff_marge
+  // coût = surface × tarif × coeff_épaisseur
+  const coutBrut = surf * mat.tarifM2 * ep.coeff;
+  const prixUnit = coefMarge > 0 ? coutBrut / coefMarge : coutBrut;
+  const prixTot  = prixUnit * qte;
+
+  // ── Désignation auto ──
+  const facesStr = art.faces
+    .map((f, i) => faceVals[i] > 0 ? faceVals[i] : null)
+    .filter(v => v !== null).join('+');
+  const desig =
+    `${GAMMES[activeGamme].label.toUpperCase()} ${activeArticle}` +
+    ` - ${mat.label} - ${facesStr} - Lg ${Lg}mm`;
+
+  // ── Affichage ──
+  if (elDvp)  elDvp.textContent  = DVP.toFixed(1) + ' mm';
+  if (elSurf) elSurf.textContent = surf.toFixed(4) + ' m²';
+  if (elPU)   elPU.textContent   = prixUnit.toFixed(2) + ' €';
+  if (elPT)   elPT.textContent   = prixTot.toFixed(2) + ' €';
+  boxes.forEach(b => b.classList.add('has-value'));
+  if (elDesg) elDesg.value = desig;
 }
 
 // ══════════════════════════════════════════
@@ -877,6 +961,97 @@ function _renderIso() {
     ctx.fillText('Lg = ' + Lg + ' mm', (pa.x + pb.x) / 2, Math.min(pa.y, pb.y) - 4);
   }
 }
+
+// ══════════════════════════════════════════
+// AJOUTER AU DEVIS
+// ══════════════════════════════════════════
+function _getMatiereCode(matKey) {
+  if (matKey.startsWith('INOX')) return 'IN';
+  if (matKey.startsWith('ALU'))  return 'ALU';
+  if (matKey.startsWith('AC'))   return 'ALU'; // laqué alu
+  return '';
+}
+
+document.getElementById('btnAjouterDevis').addEventListener('click', () => {
+  // Force le calcul immédiat (contourne le debounce de 150ms)
+  clearTimeout(_calcTimer);
+  _doCalculer();
+
+  const desig  = (document.getElementById('result-designation') || {}).value || '';
+  const dvpTxt = (document.getElementById('resDvp') || {}).textContent || '—';
+  if (!desig || dvpTxt === '—') {
+    alert('Saisissez les cotes et la longueur avant d\'ajouter au devis.');
+    return;
+  }
+
+  const dvp    = parseFloat(dvpTxt)  || 0;
+  const puTxt  = (document.getElementById('resPrixUnit') || {}).textContent || '0';
+  const prixUn = parseFloat(puTxt)   || 0;
+  const Lg     = parseFloat(document.getElementById('saisieLg').value)    || 0;
+  const qte    = Math.max(1, parseInt(document.getElementById('paramQte').value) || 1);
+  const matKey = document.getElementById('paramMatiere').value;
+  const epKey  = document.getElementById('paramEpaisseur').value;
+  const ral    = document.getElementById('paramRal').value.trim();
+
+  // Force rendu ISO immédiat pour avoir l'image à jour
+  clearTimeout(_isoTimer);
+  _renderIso();
+  const canvas      = document.getElementById('isoCanvas');
+  const canvasImage = (canvas && dvp > 0) ? canvas.toDataURL('image/png') : null;
+
+  const ligne = {
+    id:          Date.now(),
+    designation: desig,
+    matiere:     _getMatiereCode(matKey),
+    ral:         ral,
+    ep:          (EPAISSEURS[epKey] || {}).label || epKey,
+    dvp:         dvp,
+    lg:          Lg,
+    qte:         qte,
+    puHT:        prixUn,
+    canvasImage: canvasImage
+  };
+
+  try {
+    const stock = JSON.parse(localStorage.getItem('plialu-devis') || '[]');
+    stock.push(ligne);
+    localStorage.setItem('plialu-devis', JSON.stringify(stock));
+  } catch(e) {
+    alert('Erreur lors de l\'ajout au devis (localStorage plein ?).');
+    return;
+  }
+
+  const msg = document.getElementById('msgOk');
+  if (msg) {
+    msg.style.display = 'block';
+    clearTimeout(msg._t);
+    msg._t = setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  }
+});
+
+// ══════════════════════════════════════════
+// TÉLÉCHARGER VUE ISO (PNG)
+// ══════════════════════════════════════════
+document.getElementById('btnTelechargerPng').addEventListener('click', () => {
+  clearTimeout(_isoTimer);
+  _renderIso();
+
+  const dvpTxt = (document.getElementById('resDvp') || {}).textContent || '—';
+  if (dvpTxt === '—') {
+    alert('Saisissez les cotes pour générer la vue isométrique.');
+    return;
+  }
+
+  const canvas = document.getElementById('isoCanvas');
+  if (!canvas) return;
+
+  const desig    = (document.getElementById('result-designation') || {}).value || 'piece';
+  const safeName = desig.replace(/[^a-z0-9]+/gi, '_').slice(0, 50);
+  const a        = document.createElement('a');
+  a.href         = canvas.toDataURL('image/png');
+  a.download     = 'ISO_' + safeName + '.png';
+  a.click();
+});
 
 // ══════════════════════════════════════════
 // INIT
