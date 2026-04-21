@@ -394,7 +394,8 @@ function importerDepuisCalculette(){
       dvp:         l.dvp         || '',
       lg:          l.lg          || '',
       qte:         l.qte         || 1,
-      puHT:        parseFloat(l.puHT) || 0
+      puHT:        parseFloat(l.puHT) || 0,
+      canvasImage: l.canvasImage  || null
     });
   });
   localStorage.removeItem('plialu-devis');
@@ -505,8 +506,11 @@ function renderTable(){
   lignesDevis.forEach(l => {
     const total = (l.qte * l.puHT).toFixed(2);
     const tr = document.createElement('tr');
+    const thumbHtml = l.canvasImage
+      ? `<img src="${l.canvasImage}" style="width:44px;height:28px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:3px;border:1px solid #dde3e8;background:#fff;flex-shrink:0">`
+      : '';
     tr.innerHTML = `
-      <td><input value="${l.designation}" onchange="updateLigne(${l.id},'designation',this.value)" style="min-width:160px"></td>
+      <td><div style="display:flex;align-items:center">${thumbHtml}<input value="${escHtml(l.designation)}" onchange="updateLigne(${l.id},'designation',this.value)" style="min-width:140px;flex:1"></div></td>
       <td><input value="${l.ral}"         onchange="updateLigne(${l.id},'ral',this.value)"         style="min-width:70px"></td>
       <td><input type="number" value="${l.dvp}" onchange="updateLigne(${l.id},'dvp',this.value)"  style="min-width:55px"></td>
       <td><input type="number" value="${l.lg}"  onchange="updateLigne(${l.id},'lg',this.value)"   style="min-width:65px"></td>

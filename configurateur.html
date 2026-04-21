@@ -963,6 +963,97 @@ function _renderIso() {
 }
 
 // ══════════════════════════════════════════
+// AJOUTER AU DEVIS
+// ══════════════════════════════════════════
+function _getMatiereCode(matKey) {
+  if (matKey.startsWith('INOX')) return 'IN';
+  if (matKey.startsWith('ALU'))  return 'ALU';
+  if (matKey.startsWith('AC'))   return 'ALU'; // laqué alu
+  return '';
+}
+
+document.getElementById('btnAjouterDevis').addEventListener('click', () => {
+  // Force le calcul immédiat (contourne le debounce de 150ms)
+  clearTimeout(_calcTimer);
+  _doCalculer();
+
+  const desig  = (document.getElementById('result-designation') || {}).value || '';
+  const dvpTxt = (document.getElementById('resDvp') || {}).textContent || '—';
+  if (!desig || dvpTxt === '—') {
+    alert('Saisissez les cotes et la longueur avant d\'ajouter au devis.');
+    return;
+  }
+
+  const dvp    = parseFloat(dvpTxt)  || 0;
+  const puTxt  = (document.getElementById('resPrixUnit') || {}).textContent || '0';
+  const prixUn = parseFloat(puTxt)   || 0;
+  const Lg     = parseFloat(document.getElementById('saisieLg').value)    || 0;
+  const qte    = Math.max(1, parseInt(document.getElementById('paramQte').value) || 1);
+  const matKey = document.getElementById('paramMatiere').value;
+  const epKey  = document.getElementById('paramEpaisseur').value;
+  const ral    = document.getElementById('paramRal').value.trim();
+
+  // Force rendu ISO immédiat pour avoir l'image à jour
+  clearTimeout(_isoTimer);
+  _renderIso();
+  const canvas      = document.getElementById('isoCanvas');
+  const canvasImage = (canvas && dvp > 0) ? canvas.toDataURL('image/png') : null;
+
+  const ligne = {
+    id:          Date.now(),
+    designation: desig,
+    matiere:     _getMatiereCode(matKey),
+    ral:         ral,
+    ep:          (EPAISSEURS[epKey] || {}).label || epKey,
+    dvp:         dvp,
+    lg:          Lg,
+    qte:         qte,
+    puHT:        prixUn,
+    canvasImage: canvasImage
+  };
+
+  try {
+    const stock = JSON.parse(localStorage.getItem('plialu-devis') || '[]');
+    stock.push(ligne);
+    localStorage.setItem('plialu-devis', JSON.stringify(stock));
+  } catch(e) {
+    alert('Erreur lors de l\'ajout au devis (localStorage plein ?).');
+    return;
+  }
+
+  const msg = document.getElementById('msgOk');
+  if (msg) {
+    msg.style.display = 'block';
+    clearTimeout(msg._t);
+    msg._t = setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  }
+});
+
+// ══════════════════════════════════════════
+// TÉLÉCHARGER VUE ISO (PNG)
+// ══════════════════════════════════════════
+document.getElementById('btnTelechargerPng').addEventListener('click', () => {
+  clearTimeout(_isoTimer);
+  _renderIso();
+
+  const dvpTxt = (document.getElementById('resDvp') || {}).textContent || '—';
+  if (dvpTxt === '—') {
+    alert('Saisissez les cotes pour générer la vue isométrique.');
+    return;
+  }
+
+  const canvas = document.getElementById('isoCanvas');
+  if (!canvas) return;
+
+  const desig    = (document.getElementById('result-designation') || {}).value || 'piece';
+  const safeName = desig.replace(/[^a-z0-9]+/gi, '_').slice(0, 50);
+  const a        = document.createElement('a');
+  a.href         = canvas.toDataURL('image/png');
+  a.download     = 'ISO_' + safeName + '.png';
+  a.click();
+});
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 initSelects();   // 1. peupler les <select> depuis les données
