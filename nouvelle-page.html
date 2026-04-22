@@ -481,9 +481,227 @@ function showToast() {
   if (el) { el.addEventListener('input', saveSession); el.addEventListener('change', saveSession); }
 });
 
-// ── Stubs câblés en Passe 3 ──
-function updateFields() {}
-function drawIso() {}
+// ── Inférence plis depuis le nom de l'article ──
+function _mkplis(n) {
+  const k = Math.max(1, Math.min(4, n));
+  const F = { 1:['A','B'], 2:['A','B','C'], 3:['A','B','C','D'], 4:['A','B','C','D','E'] };
+  const A = { 1:['pliA'], 2:['pliA','pliB'], 3:['pliA','pliB','pliC'], 4:['pliA','pliB','pliC','pliD'] };
+  return { plis:k, faces:F[k], angles:A[k] };
+}
+
+function getPlisFromArticle(name) {
+  // Couvertine spéciaux (testés en premier)
+  if (/[Pp]late\s+2\s*[Rr]abat|[Pp]ente/i.test(name))                return _mkplis(3);
+  if (/[Pp]late\s+1\s*[Rr]abat|[Cc]oll[eé]e|[Cc]lipse/i.test(name)) return _mkplis(2);
+  // Motif "N Plis" / "N pli" dans le nom
+  const m = name.match(/([1-4])\s*[Pp]li/);
+  if (m) return _mkplis(parseInt(m[1]));
+  // Motif PrefixN (Bv2, Bv3, Bv4 …) : lettre(s) + chiffre + autre lettre
+  const p = name.match(/[A-Za-z]+([2-4])[A-Za-z]/);
+  if (p) return _mkplis(parseInt(p[1]));
+  return _mkplis(1); // défaut : 2 faces, 1 angle
+}
+
+// ── Activation / désactivation des champs selon l'article actif ──
+function updateFields() {
+  const art = activeArticle ? getPlisFromArticle(activeArticle) : _mkplis(1);
+  ['A','B','C','D','E'].forEach(f => {
+    const on   = art.faces.includes(f);
+    const wrap = document.getElementById('field' + f);
+    const inp  = document.getElementById('saisie' + f);
+    if (wrap) wrap.classList.toggle('dim-off', !on);
+    if (inp)  { inp.disabled = !on; if (!on) inp.value = ''; }
+  });
+  ['pliA','pliB','pliC','pliD'].forEach(a => {
+    const on  = art.angles.includes(a);
+    const KEY = a[0].toUpperCase() + a.slice(1); // pliA → PliA
+    const wrap = document.getElementById('field' + KEY);
+    const inp  = document.getElementById('saisie' + KEY);
+    if (wrap) wrap.classList.toggle('dim-off', !on);
+    if (inp)  { inp.disabled = !on; if (!on) inp.value = ''; else if (!inp.value) inp.value = '90'; }
+  });
+  // Auto-save à chaque saisie
+  ['A','B','C','D','E','PliA','PliB','PliC','PliD'].forEach(f => {
+    const el = document.getElementById('saisie' + f);
+    if (el && !el._wired) {
+      el.addEventListener('input', () => { drawIso(); calculeResultats(); saveSession(); });
+      el._wired = true;
+    }
+  });
+  ['saisieLg','saisieRepere'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._wired) {
+      el.addEventListener('input', () => { drawIso(); calculeResultats(); saveSession(); });
+      el._wired = true;
+    }
+  });
+  const hint = document.getElementById('isoHint');
+  if (hint) hint.style.display = 'none';
+}
+
+// ── Vue ISO — debounced ──
+let _isoTimer = null;
+function drawIso() {
+  clearTimeout(_isoTimer);
+  _isoTimer = setTimeout(_renderIso, 150);
+}
+
+function _renderIso() {
+  const canvas = document.getElementById('isoCanvas');
+  if (!canvas) return;
+  const ctx  = canvas.getContext('2d');
+  const wrap = canvas.parentElement;
+  const W    = wrap.clientWidth  || 600;
+  const H    = wrap.clientHeight || 280;
+  const dpr  = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const art      = activeArticle ? getPlisFromArticle(activeArticle) : _mkplis(1);
+  const faceVals = art.faces.map(f =>
+    parseFloat(document.getElementById('saisie' + f).value) || 0);
+  const angleVals = art.angles.map(a => {
+    const key = a[0].toUpperCase() + a.slice(1);
+    return parseFloat(document.getElementById('saisie' + key).value) || 90;
+  });
+  const Lg  = parseFloat(document.getElementById('saisieLg').value) || 0;
+  const DVP = faceVals.reduce((s, v) => s + v, 0);
+
+  if (DVP === 0) {
+    ctx.fillStyle = '#2d3a4a';
+    ctx.font = '600 12px "Segoe UI",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Saisissez les cotes pour afficher la pièce', W / 2, H / 2);
+    return;
+  }
+
+  // ── 1. Profil 2D en mm ──
+  let dirDeg = 180;
+  const profile = [{ x: 0, y: 0 }];
+  for (let i = 0; i < faceVals.length; i++) {
+    const rad  = dirDeg * Math.PI / 180;
+    const prev = profile[profile.length - 1];
+    profile.push({ x: prev.x + Math.cos(rad) * faceVals[i],
+                   y: prev.y + Math.sin(rad) * faceVals[i] });
+    if (i < angleVals.length) dirDeg -= (180 - angleVals[i]);
+  }
+
+  // ── 2. Projection isométrique ──
+  const c30 = Math.cos(Math.PI / 6);
+  const s30 = Math.sin(Math.PI / 6);
+  const toIso = (px, py, z = 0) => ({
+    x: (px - z) * c30,
+    y:  py + (px + z) * s30
+  });
+
+  const LgVis = Lg > 0 ? Math.min(Lg, DVP * 2.5) : DVP * 1.5;
+
+  // ── 3. Bounding box → fitScale ──
+  const rawPts = [];
+  profile.forEach(p => {
+    rawPts.push(toIso(p.x, p.y, 0));
+    rawPts.push(toIso(p.x, p.y, LgVis));
+  });
+  const rxs = rawPts.map(p => p.x), rys = rawPts.map(p => p.y);
+  const bx0 = Math.min(...rxs), bx1 = Math.max(...rxs);
+  const by0 = Math.min(...rys), by1 = Math.max(...rys);
+  const bw = bx1 - bx0 || 1, bh = by1 - by0 || 1;
+  const PAD = 52;
+  const sc  = Math.min((W - PAD * 2) / bw, (H - PAD * 2) / bh);
+  const ox  = W / 2 - (bx0 + bw / 2) * sc;
+  const oy  = H / 2 - (by0 + bh / 2) * sc;
+
+  const toScreen = (px, py, z = 0) => {
+    const p = toIso(px, py, z);
+    return { x: p.x * sc + ox, y: p.y * sc + oy };
+  };
+
+  const cent = toScreen(
+    profile.reduce((s, p) => s + p.x, 0) / profile.length,
+    profile.reduce((s, p) => s + p.y, 0) / profile.length, 0);
+
+  // ── 4. Quads extrudés ──
+  for (let i = 0; i < faceVals.length; i++) {
+    if (faceVals[i] === 0) continue;
+    const a = toScreen(profile[i].x,   profile[i].y,   0);
+    const b = toScreen(profile[i+1].x, profile[i+1].y, 0);
+    const c = toScreen(profile[i+1].x, profile[i+1].y, LgVis);
+    const d = toScreen(profile[i].x,   profile[i].y,   LgVis);
+    const horiz = Math.abs(profile[i+1].y - profile[i].y) <=
+                  Math.abs(profile[i+1].x - profile[i].x);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    ctx.closePath();
+    ctx.fillStyle = horiz ? 'rgba(255,182,220,0.5)' : 'rgba(220,150,190,0.4)';
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2; ctx.stroke();
+  }
+
+  // ── 5. Profils avant/arrière ──
+  const strokeProfil = (z, lw, col) => {
+    ctx.beginPath();
+    const s0 = toScreen(profile[0].x, profile[0].y, z);
+    ctx.moveTo(s0.x, s0.y);
+    for (let i = 1; i < profile.length; i++) {
+      const p = toScreen(profile[i].x, profile[i].y, z);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+  };
+  strokeProfil(LgVis, 1, '#888');
+  strokeProfil(0,     2, '#111');
+
+  // ── 6. Labels faces (magenta) ──
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  art.faces.forEach((face, i) => {
+    if (faceVals[i] === 0) return;
+    const mid = toScreen(
+      (profile[i].x + profile[i+1].x) / 2,
+      (profile[i].y + profile[i+1].y) / 2, 0);
+    const sa = toScreen(profile[i].x, profile[i].y, 0);
+    const sb = toScreen(profile[i+1].x, profile[i+1].y, 0);
+    const sdx = sb.x - sa.x, sdy = sb.y - sa.y;
+    const slen = Math.hypot(sdx, sdy) || 1;
+    let nx = -sdy / slen, ny = sdx / slen;
+    if ((cent.x - mid.x) * nx + (cent.y - mid.y) * ny > 0) { nx = -nx; ny = -ny; }
+    const lx = mid.x + nx * 18, ly = mid.y + ny * 18;
+    ctx.font = 'bold 11px "Segoe UI",sans-serif';
+    ctx.fillStyle = '#e60090';
+    ctx.fillText(face, lx, ly);
+    if (faceVals[i] >= 5) {
+      ctx.font = '9px "Segoe UI",sans-serif';
+      ctx.fillStyle = '#b3006e';
+      ctx.fillText(faceVals[i] + ' mm', lx, ly + 13);
+    }
+  });
+
+  // ── 7. Labels angles (rouge) ──
+  art.angles.forEach((angle, i) => {
+    const p = toScreen(profile[i + 1].x, profile[i + 1].y, 0);
+    ctx.font = 'bold 10px "Segoe UI",sans-serif';
+    ctx.fillStyle = '#cc0000';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(angleVals[i] + '°', p.x + 6, p.y - 9);
+  });
+
+  // ── 8. Label Lg ──
+  if (Lg > 0) {
+    const pa = toScreen(profile[0].x, profile[0].y, 0);
+    const pb = toScreen(profile[0].x, profile[0].y, LgVis);
+    ctx.font = 'bold 10px "Segoe UI",sans-serif';
+    ctx.fillStyle = '#e60090';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Lg = ' + Lg + ' mm', (pa.x + pb.x) / 2, Math.min(pa.y, pb.y) - 4);
+  }
+}
+
+// ── Calculs — stub Passe 3B ──
 function calculeResultats() {}
 
 // ── INIT ──
