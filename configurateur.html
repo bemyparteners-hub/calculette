@@ -183,41 +183,58 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
           <div class="gamme-label"><strong>Cornière</strong><span>Cr1 … Cr2</span></div>
         </button>
 
-        <button class="gamme-btn" data-gamme="chapeau">
+        <button class="gamme-btn" data-gamme="eclisse_ext">
           <div class="gamme-thumb">
             <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4,26 4,16 12,16 12,8 30,8 30,16 38,16 38,26"/>
+              <polyline points="6,26 6,16 22,16 22,8 36,8"/>
             </svg>
           </div>
-          <div class="gamme-label"><strong>Chapeau</strong><span>Ch1 … Ch2</span></div>
+          <div class="gamme-label"><strong>Eclisse ext</strong><span>EE1</span></div>
         </button>
 
-        <button class="gamme-btn" data-gamme="noue">
+        <button class="gamme-btn" data-gamme="eclisse_int">
           <div class="gamme-thumb">
             <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4,8 21,26 38,8"/>
+              <polyline points="6,8 6,18 22,18 22,26 36,26"/>
             </svg>
           </div>
-          <div class="gamme-label"><strong>Noue</strong><span>No1 … No2</span></div>
+          <div class="gamme-label"><strong>Eclisse int</strong><span>EI1</span></div>
         </button>
 
-        <button class="gamme-btn" data-gamme="faitage">
+        <button class="gamme-btn" data-gamme="couvre_joint">
           <div class="gamme-thumb">
             <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4,26 21,8 38,26"/>
+              <polyline points="4,20 12,20 12,8 30,8 30,20 38,20"/>
             </svg>
           </div>
-          <div class="gamme-label"><strong>Faîtage</strong><span>Fa1 … Fa2</span></div>
+          <div class="gamme-label"><strong>CJ ext plat</strong><span>CJ1</span></div>
         </button>
 
-        <button class="gamme-btn" data-gamme="habillage">
+        <button class="gamme-btn" data-gamme="bouchon">
           <div class="gamme-thumb">
             <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4,16 34,16 34,26"/>
-              <polyline points="4,16 4,8"/>
+              <rect x="8" y="9" width="26" height="14" rx="1"/>
             </svg>
           </div>
-          <div class="gamme-label"><strong>Habillage</strong><span>Ha1 … Ha2</span></div>
+          <div class="gamme-label"><strong>Bouchon</strong><span>Bo1</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="releve_biseau">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6,26 6,10 36,4"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Relevé biseau</strong><span>Rb1 … Rb2</span></div>
+        </button>
+
+        <button class="gamme-btn" data-gamme="releve_droit">
+          <div class="gamme-thumb">
+            <svg width="42" height="32" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6,26 6,8 36,8"/>
+            </svg>
+          </div>
+          <div class="gamme-label"><strong>Relevé droit</strong><span>Rd1 … Rd2</span></div>
         </button>
 
         <button class="gamme-btn" data-gamme="autres">
@@ -286,8 +303,19 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
       <div class="param-sep"></div>
 
       <div class="param-field">
-        <label for="paramRal">Finition / RAL</label>
-        <input type="text" id="paramRal" placeholder="ex: RAL 7016">
+        <label for="paramRal">RAL</label>
+        <input type="text" id="paramRal" placeholder="ex: 7016">
+      </div>
+
+      <div class="param-field">
+        <label for="paramFinition">Finition</label>
+        <select id="paramFinition">
+          <option value="M">Mat</option>
+          <option value="B">Brillant</option>
+          <option value="NF">Non fini</option>
+          <option value="ANO">Anodisé</option>
+          <option value="BRT">Brut</option>
+        </select>
       </div>
 
       <div class="param-field">
@@ -435,10 +463,17 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5}
 
     </div>
 
-    <div style="margin-top:12px">
-      <label for="result-designation">Désignation générée</label>
-      <input type="text" id="result-designation" readonly placeholder="Sélectionnez un article et saisissez les cotes…"
-             style="background:#f8fafc;font-size:12px;font-weight:600;color:#1a2e38">
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+      <div>
+        <label for="result-designation">Désignation générée</label>
+        <input type="text" id="result-designation" readonly placeholder="Sélectionnez un article et saisissez les cotes…"
+               style="background:#f8fafc;font-size:12px;font-weight:600;color:#1a2e38">
+      </div>
+      <div>
+        <label for="result-ref-mat">Réf. matière</label>
+        <input type="text" id="result-ref-mat" readonly placeholder="AL15-7016M"
+               style="background:#f8fafc;font-size:12px;font-weight:700;color:#0d2933;letter-spacing:.4px;width:110px;text-align:center">
+      </div>
     </div>
   </div>
 
@@ -484,21 +519,25 @@ const GAMMES = {
     Co1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
     Co2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
   }},
-  chapeau:   { label:'Chapeau',    articles:{
-    Ch1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
-    Ch2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  eclisse_ext:   { label:'Eclisse ext',    articles:{
+    EE1:{ plis:1, faces:['A','B'],               angles:['pliA'] }
   }},
-  noue:      { label:'Noue',       articles:{
-    No1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
-    No2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  eclisse_int:   { label:'Eclisse int',    articles:{
+    EI1:{ plis:1, faces:['A','B'],               angles:['pliA'] }
   }},
-  faitage:   { label:'Faîtage',    articles:{
-    Fa1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] },
-    Fa2:{ plis:4, faces:['A','B','C','D','E'],    angles:['pliA','pliB','pliC','pliD'] }
+  couvre_joint:  { label:'CJ ext plat',   articles:{
+    CJ1:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
   }},
-  habillage: { label:'Habillage',  articles:{
-    Ha1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
-    Ha2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
+  bouchon:       { label:'Bouchon',       articles:{
+    Bo1:{ plis:0, faces:['A','B'],               angles:[] }
+  }},
+  releve_biseau: { label:'Relevé biseau', articles:{
+    Rb1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Rb2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
+  }},
+  releve_droit:  { label:'Relevé droit',  articles:{
+    Rd1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
+    Rd2:{ plis:2, faces:['A','B','C'],            angles:['pliA','pliB'] }
   }},
   autres:    { label:'Autres',     articles:{
     Au1:{ plis:1, faces:['A','B'],               angles:['pliA'] },
@@ -527,6 +566,23 @@ const EPAISSEURS = {
   '1.2':  { label:'1,2 mm',  mm:1.2,  coeff:1.25 },
   '1.5':  { label:'1,5 mm',  mm:1.5,  coeff:1.40 },
   '2.0':  { label:'2,0 mm',  mm:2.0,  coeff:1.65 }
+};
+
+const GAMME_ABBREV = {
+  bavette:       'Bv',
+  couvertine:    'C',
+  corniere:      'Co',
+  eclisse_ext:   'EclExt',
+  eclisse_int:   'EclInt',
+  couvre_joint:  'CJEXTplat',
+  bouchon:       'Bouch',
+  releve_biseau: 'Rbiseau',
+  releve_droit:  'Relevé',
+  autres:        ''
+};
+
+const EP_REF = {
+  '0.6':'06', '0.75':'075', '1.0':'10', '1.2':'12', '1.5':'15', '2.0':'20'
 };
 
 // ══════════════════════════════════════════
@@ -639,6 +695,7 @@ function saveSession() {
       matiere:    document.getElementById('paramMatiere').value,
       epaisseur:  document.getElementById('paramEpaisseur').value,
       ral:        document.getElementById('paramRal').value,
+      finition:   document.getElementById('paramFinition').value,
       qte:        document.getElementById('paramQte').value,
       tauxMo:     document.getElementById('paramTauxMo').value,
       coefMarge:  document.getElementById('paramCoefMarge').value,
@@ -668,7 +725,7 @@ function loadSession() {
   // Restaurer les valeurs (seulement sur les champs actifs)
   const vals = {
     paramMatiere:s.matiere, paramEpaisseur:s.epaisseur,
-    paramRal:s.ral, paramQte:s.qte,
+    paramRal:s.ral, paramFinition:s.finition, paramQte:s.qte,
     paramTauxMo:s.tauxMo, paramCoefMarge:s.coefMarge,
     saisieRepere:s.repere, saisieLg:s.lg,
     saisieA:s.A, saisieB:s.B, saisieC:s.C, saisieD:s.D, saisieE:s.E,
@@ -771,12 +828,24 @@ function _doCalculer() {
   const prixUnit = coefMarge > 0 ? coutBrut / coefMarge : coutBrut;
   const prixTot  = prixUnit * qte;
 
+  // ── Référence matière : AL{ep}-{RAL}{finition} ──
+  const finition = document.getElementById('paramFinition').value;
+  const ralRaw   = document.getElementById('paramRal').value.trim();
+  const ralClean = ralRaw.replace(/^RAL\s*/i, '').replace(/\s+/g, '').toUpperCase() || 'BR';
+  const refMat   = `AL${EP_REF[epKey] || epKey}-${ralClean}${finition}`;
+
+  // ── Référence pièce : abbrev + face max active ──
+  const abbrev   = GAMME_ABBREV[activeGamme] || '';
+  const maxFace  = faceVals.filter(v => v > 0).reduce((m, v) => Math.max(m, v), 0);
+  const refPiece = maxFace > 0 ? `${abbrev}${maxFace}` : abbrev;
+
   // ── Désignation auto ──
   const facesStr = art.faces
     .map((f, i) => faceVals[i] > 0 ? faceVals[i] : null)
     .filter(v => v !== null).join('+');
-  const desig =
-    `${GAMMES[activeGamme].label} - ${mat.label} - ${facesStr} - Lg ${Lg}mm`;
+  const desig = facesStr
+    ? `${GAMMES[activeGamme].label} ${refPiece} - ${refMat} - ${facesStr} - Lg ${Lg}mm`
+    : '';
 
   // ── Affichage ──
   if (elDvp)  elDvp.textContent  = DVP.toFixed(1) + ' mm';
@@ -785,6 +854,10 @@ function _doCalculer() {
   if (elPT)   elPT.textContent   = prixTot.toFixed(2) + ' €';
   boxes.forEach(b => b.classList.add('has-value'));
   if (elDesg) elDesg.value = desig;
+  const elRefMat = document.getElementById('result-ref-mat');
+  if (elRefMat) elRefMat.value = refMat;
+  const repEl = document.getElementById('saisieRepere');
+  if (repEl && !repEl.value) repEl.placeholder = refPiece || 'ex: BA10';
 }
 
 // ══════════════════════════════════════════
