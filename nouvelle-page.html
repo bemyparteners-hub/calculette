@@ -314,7 +314,185 @@ select option{background:#141824}
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
 <script>
-// Passe 2+ (logique JS)
+// ════════════════════════════════════
+// PASSE 2 — Données + Sélection
+// ════════════════════════════════════
+(() => {
+
+// ── État global ──
+let activeFamille = PLIALU_FAMILLES[0];
+let activeArticle = null;
+let devisLignes   = [];
+const SESSION_KEY = 'plialu-session';
+
+// ── Peuple les selects depuis plialu-data.js ──
+function initSelects() {
+  document.getElementById('paramEpaisseur').innerHTML =
+    PLIALU_EPAISSEURS.map(e =>
+      `<option value="${e.valeur}"${e.valeur===0.75?' selected':''}>${e.valeur} mm</option>`
+    ).join('');
+  document.getElementById('paramFinition').innerHTML =
+    PLIALU_FINITIONS.map(f =>
+      `<option value="${f.code}">${f.label}</option>`
+    ).join('');
+  document.getElementById('paramMatiere').innerHTML =
+    `<option value="ALU">Aluminium</option>`;
+}
+
+// ── SVGs schématiques par famille ──
+const FAM_SVG = {
+  'Bavette':            '<polyline points="4,8 22,8 22,24"/>',
+  'Bavette Accessoire': '<polyline points="4,8 22,8 22,24"/><circle cx="32" cy="16" r="4" fill="none"/>',
+  'Couvertine':         '<polyline points="4,22 4,10 21,10 21,6 38,6 38,10 38,22"/>',
+  'Couvertine Accessoire': '<polyline points="6,22 6,12 20,12 20,7 36,7 36,12"/><circle cx="36" cy="22" r="4" fill="none"/>',
+  'Couvre Joint':       '<polyline points="4,18 10,18 10,8 30,8 30,18 36,18"/>',
+  'Departs':            '<polyline points="4,22 4,10 22,10"/><polyline points="22,10 36,10 36,22"/>',
+  'Divers':             '<rect x="8" y="9" width="24" height="14" rx="1"/>',
+  'GeExtrude':          '<polyline points="4,22 4,8 36,8 36,22"/>',
+  'Habillage':          '<polyline points="4,14 34,14 34,22"/><polyline points="4,14 4,8"/>',
+  'Lateraux':           '<polyline points="4,22 4,8"/><line x1="4" y1="15" x2="36" y2="15"/>',
+  'Lisses':             '<line x1="4" y1="16" x2="38" y2="16"/>',
+  'Profils Divers':     '<polyline points="4,22 4,10 14,10 14,16 26,16 26,10 36,10 36,22"/>',
+  'Solin et Ge Pliées': '<polyline points="4,22 4,10 36,6"/>',
+  'Solins et Ge Pliées Accessoires': '<polyline points="4,22 4,10 36,6"/><circle cx="36" cy="6" r="4" fill="none"/>',
+  'Test':               '<line x1="4" y1="20" x2="36" y2="20"/><line x1="20" y1="8" x2="20" y2="20"/>'
+};
+function svgForFamille(nom) {
+  const p = FAM_SVG[nom] || '<polyline points="4,16 38,16"/>';
+  return `<svg width="34" height="24" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+
+// ── Rendu liste familles (filtrable) ──
+function renderFamilles(filter) {
+  const q = (filter || '').toLowerCase();
+  const list = document.getElementById('familleList');
+  const visible = PLIALU_FAMILLES.filter(f =>
+    !q || f.toLowerCase().includes(q) ||
+    getArticlesByFamille(f).some(a => a.article.toLowerCase().includes(q))
+  );
+  list.innerHTML = visible.map(f => {
+    const n = getArticlesByFamille(f).length;
+    return `<button class="famille-btn${f===activeFamille?' active':''}" data-famille="${f}">
+      <div class="fam-thumb">${svgForFamille(f)}</div>
+      <div class="fam-lbl"><strong>${f}</strong><span>${n} art.</span></div>
+    </button>`;
+  }).join('');
+  list.querySelectorAll('.famille-btn').forEach(btn =>
+    btn.addEventListener('click', () => selectFamille(btn.dataset.famille))
+  );
+}
+// ── Sélection famille ──
+function selectFamille(f) {
+  activeFamille = f;
+  const arts = getArticlesByFamille(f);
+  activeArticle = arts.length ? arts[0].article : null;
+  renderFamilles(document.getElementById('searchInput').value);
+  renderArticles(f);
+  updateFields(); drawIso(); calculeResultats();
+  saveSession();
+}
+
+// ── Rendu pills articles ──
+function renderArticles(famille, filter) {
+  const q = (filter || document.getElementById('searchInput').value).toLowerCase();
+  const arts = getArticlesByFamille(famille).filter(a =>
+    !q || a.article.toLowerCase().includes(q) || famille.toLowerCase().includes(q)
+  );
+  const title = document.getElementById('articlesPanelTitle');
+  if (title) title.textContent = `${famille} — ${arts.length} article${arts.length>1?'s':''}`;
+  document.getElementById('articlesPills').innerHTML = arts.map(a =>
+    `<button class="article-pill${a.article===activeArticle?' active':''}" data-art="${a.article}">${a.article}</button>`
+  ).join('');
+  document.getElementById('articlesPills').querySelectorAll('.article-pill').forEach(btn =>
+    btn.addEventListener('click', () => selectArticle(btn.dataset.art))
+  );
+}
+
+// ── Sélection article ──
+function selectArticle(art) {
+  activeArticle = art;
+  renderArticles(activeFamille);
+  updateFields(); drawIso(); calculeResultats();
+  saveSession();
+}
+
+// ── Recherche live ──
+document.getElementById('searchInput').addEventListener('input', e => {
+  const q = e.target.value;
+  renderFamilles(q);
+  renderArticles(activeFamille, q);
+});
+
+// ── Save session ──
+function saveSession() {
+  try {
+    const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      famille: activeFamille, article: activeArticle, devisLignes,
+      epaisseur: parseFloat(get('paramEpaisseur')), ral: get('paramRal'),
+      finition: get('paramFinition'), qte: get('paramQte'),
+      coefMarge: get('paramCoefMarge'), tauxMo: get('paramTauxMo'),
+      repere: get('saisieRepere'), lg: get('saisieLg'),
+      A: get('saisieA'), B: get('saisieB'), C: get('saisieC'),
+      D: get('saisieD'), E: get('saisieE'),
+      pliA: get('saisiePliA'), pliB: get('saisiePliB'),
+      pliC: get('saisiePliC'), pliD: get('saisiePliD'),
+      client: get('inputClient'), affaire: get('inputAffaire')
+    }));
+    showToast();
+  } catch(e) {}
+}
+
+// ── Load session ──
+function loadSession() {
+  let s; try { s = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) {}
+  if (!s) return;
+  if (s.famille && PLIALU_FAMILLES.includes(s.famille)) activeFamille = s.famille;
+  if (s.article) activeArticle = s.article;
+  if (Array.isArray(s.devisLignes)) devisLignes = s.devisLignes;
+  const map = {
+    paramEpaisseur:s.epaisseur, paramRal:s.ral, paramFinition:s.finition,
+    paramQte:s.qte, paramCoefMarge:s.coefMarge, paramTauxMo:s.tauxMo,
+    saisieRepere:s.repere, saisieLg:s.lg,
+    saisieA:s.A, saisieB:s.B, saisieC:s.C, saisieD:s.D, saisieE:s.E,
+    saisiePliA:s.pliA, saisiePliB:s.pliB, saisiePliC:s.pliC, saisiePliD:s.pliD,
+    inputClient:s.client, inputAffaire:s.affaire
+  };
+  Object.entries(map).forEach(([id, val]) => {
+    if (val == null || val === '') return;
+    const el = document.getElementById(id); if (el) el.value = val;
+  });
+}
+
+// ── Toast ──
+function showToast() {
+  const t = document.getElementById('save-toast');
+  if (!t) return;
+  t.textContent = '💾 Sauvegardé';
+  t.style.opacity = '1';
+  clearTimeout(t._ti);
+  t._ti = setTimeout(() => { t.style.opacity = '0'; }, 1600);
+}
+
+// ── Auto-save params ──
+['paramEpaisseur','paramRal','paramFinition','paramQte','paramCoefMarge',
+ 'paramTauxMo','inputClient','inputAffaire'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener('input', saveSession); el.addEventListener('change', saveSession); }
+});
+
+// ── Stubs câblés en Passe 3 ──
+function updateFields() {}
+function drawIso() {}
+function calculeResultats() {}
+
+// ── INIT ──
+initSelects();
+loadSession();
+renderFamilles();
+renderArticles(activeFamille);
+
+})();
 </script>
 
 </body>
