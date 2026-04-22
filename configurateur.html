@@ -776,8 +776,7 @@ function _doCalculer() {
     .map((f, i) => faceVals[i] > 0 ? faceVals[i] : null)
     .filter(v => v !== null).join('+');
   const desig =
-    `${GAMMES[activeGamme].label.toUpperCase()} ${activeArticle}` +
-    ` - ${mat.label} - ${facesStr} - Lg ${Lg}mm`;
+    `${GAMMES[activeGamme].label} - ${mat.label} - ${facesStr} - Lg ${Lg}mm`;
 
   // ── Affichage ──
   if (elDvp)  elDvp.textContent  = DVP.toFixed(1) + ' mm';
@@ -811,8 +810,7 @@ function _renderIso() {
   canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  ctx.fillStyle = '#fafbfc';
-  ctx.fillRect(0, 0, W, H);
+  ctx.clearRect(0, 0, W, H);
 
   const art      = GAMMES[activeGamme].articles[activeArticle];
   const faceVals = art.faces.map(f =>

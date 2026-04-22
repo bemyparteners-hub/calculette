@@ -705,9 +705,12 @@ async function genererPDF(){
       const l = lignesDevis[data.row.index];
       if (!l || !l.canvasImage) return;
 
-      // Image ISO centrée verticalement dans la cellule
+      // Fond gris + image ISO centrée verticalement dans la cellule
+      const M  = 0.7; // marge en mm autour de l'image (~2 px écran)
       const ix = data.cell.x + CPAD;
       const iy = data.cell.y + (data.cell.height - ISO_H) / 2;
+      doc.setFillColor(240, 244, 248);
+      doc.roundedRect(ix - M, iy - M, ISO_W + M * 2, ISO_H + M * 2, 0.8, 0.8, 'F');
       try {
         doc.addImage(l.canvasImage, 'PNG', ix, iy, ISO_W, ISO_H);
       } catch(e) { /* image corrompue, on ignore */ }
