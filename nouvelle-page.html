@@ -29,18 +29,10 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 .btn-pdf:hover{background:#d8ff33;}
 
 /* ── Main grid ── */
-.main{padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-content:start;}
+.main{padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start;}
 .fieldset{border:1px solid var(--line);border-radius:var(--radius);background:#fff;display:flex;flex-direction:column;overflow:hidden;}
 .fs-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:9px 12px 7px;border-bottom:1px solid var(--line);background:#fafbfc;flex-shrink:0;}
 .fs-body{padding:10px 12px;display:flex;flex-direction:column;gap:7px;flex:1;}
-
-/* ── Gammes grid ── */
-.gammes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.gamme-thumb{border:1px solid var(--line);border-radius:4px;padding:5px 4px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fafbfc;transition:border-color .15s,background .15s;}
-.gamme-thumb:hover{border-color:var(--accent);background:var(--accent-soft);}
-.gamme-thumb.active{border-color:var(--accent);background:var(--accent-soft);}
-.gamme-thumb svg{width:36px;height:28px;}
-.gamme-thumb span{font-size:9px;color:var(--muted);text-align:center;line-height:1.1;word-break:break-word;}
 
 /* ── Article select ── */
 .article-preview{border:1px solid var(--line);border-radius:4px;background:#fafbfc;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
@@ -93,11 +85,15 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 .saisie-row.dim-off{opacity:.3;pointer-events:none;}
 
 /* ── Footer ── */
-.footer{border-top:1px solid var(--line);padding:8px 14px;display:flex;align-items:center;gap:10px;background:#fafbfc;}
-.footer input{flex:1;border:1px solid var(--line);border-radius:var(--radius);padding:5px 10px;font-size:12px;color:var(--text);outline:none;}
+.footer{border-top:1px solid var(--line);padding:6px 14px;display:flex;align-items:center;gap:8px;background:#fafbfc;flex-wrap:wrap;}
+.footer-results{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.fr-chip{font-size:11px;color:var(--muted);background:#f0f1f4;border:1px solid var(--line);border-radius:4px;padding:3px 7px;white-space:nowrap;}
+.fr-chip strong{color:var(--text);font-weight:700;margin-left:3px;}
+.fr-chip.fr-total strong{color:var(--accent);}
+.fr-ref{font-size:11px;font-weight:700;color:var(--text);letter-spacing:.3px;white-space:nowrap;border-left:1px solid var(--line);padding-left:8px;}
+.footer input{flex:1;min-width:120px;border:1px solid var(--line);border-radius:var(--radius);padding:5px 10px;font-size:12px;color:var(--text);outline:none;}
 .footer input:focus{border-color:var(--accent);}
-.footer .ref-mat{font-size:11px;color:var(--muted);white-space:nowrap;}
-.btn-add-devis{background:#cbff00;color:#1a1f2e;border:none;border-radius:var(--radius);padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-add-devis{background:#cbff00;color:#1a1f2e;border:none;border-radius:var(--radius);padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .btn-add-devis:hover{background:#d8ff33;}
 
 /* ── Misc ── */
@@ -134,8 +130,8 @@ select,input[type=text],input[type=number]{font-family:inherit;}
     <!-- Col 1 : Gammes -->
     <div class="fieldset">
       <div class="fs-title">Gammes</div>
-      <div class="fs-body" style="padding:8px;overflow-y:auto;">
-        <div class="gammes-grid" id="gammesGrid"></div>
+      <div class="fs-body">
+        <select id="gammeSelect" style="border:1px solid var(--line);border-radius:4px;padding:5px 7px;font-size:12px;background:#fff;color:var(--text);outline:none;width:100%;"></select>
       </div>
     </div>
 
@@ -168,47 +164,8 @@ select,input[type=text],input[type=number]{font-family:inherit;}
           </div>
         </div>
         <div class="param-row">
-          <label>Épaisseur</label>
-          <input id="paramEpaisseur" class="param-readonly" readonly placeholder="—">
-        </div>
-        <div class="param-row">
-          <label>RAL</label>
-          <input id="paramRal" class="param-readonly" readonly placeholder="—">
-        </div>
-        <div class="param-row">
-          <label>Finition</label>
-          <input id="paramFinition" class="param-readonly" readonly placeholder="—">
-        </div>
-        <div class="param-row">
           <label>Quantité</label>
           <input id="quantite" type="number" value="1" min="1" step="1">
-        </div>
-      </div>
-    </div>
-
-    <!-- Col 4 : Champs calculés -->
-    <div class="fieldset">
-      <div class="fs-title">Calculé</div>
-      <div class="fs-body">
-        <div class="param-row">
-          <label>DVP mm</label>
-          <span id="resDvp" class="param-static">—</span>
-        </div>
-        <div class="param-row">
-          <label>Surface m²</label>
-          <span id="resSurface" class="param-static">—</span>
-        </div>
-        <div class="param-row">
-          <label>PU HT</label>
-          <span id="resPrixUnit" class="param-static">—</span>
-        </div>
-        <div class="param-row">
-          <label>Total HT</label>
-          <span id="resPrixTotal" class="param-static">—</span>
-        </div>
-        <div class="param-row">
-          <label>Réf mat.</label>
-          <span id="resRefMat" class="param-static" style="font-size:11px;color:var(--muted);">—</span>
         </div>
       </div>
     </div>
@@ -268,8 +225,14 @@ select,input[type=text],input[type=number]{font-family:inherit;}
 
   <!-- Footer -->
   <div class="footer">
+    <div class="footer-results">
+      <span class="fr-chip">DVP <strong id="resDvp">—</strong></span>
+      <span class="fr-chip">Surface <strong id="resSurface">—</strong></span>
+      <span class="fr-chip">PU <strong id="resPrixUnit">—</strong></span>
+      <span class="fr-chip fr-total">Total <strong id="resPrixTotal">—</strong></span>
+      <span class="fr-ref" id="resRefMat">—</span>
+    </div>
     <input id="resultDesignation" type="text" placeholder="Désignation article…">
-    <span class="ref-mat" id="resultRefPiece">—</span>
     <button class="btn-add-devis" id="btnAjouterDevis">➕ Ajouter au devis</button>
   </div>
 
@@ -293,49 +256,15 @@ const PLIALU_TARIFS_FAM = {
   'Acier brut':         11.00
 };
 
-const FAM_SVG = {
-  "Bavette":                         "M4,24 H22 V8",
-  "Bavette Accessoire":              "M4,24 H14 V14 H24 V8",
-  "Couvertine":                      "M4,8 H32 V20",
-  "Couvertine Accessoire":           "M4,8 H18 V20 H32",
-  "Couvre Joint":                    "M4,22 H14 V8 H28",
-  "Departs":                         "M4,24 H12 V16 H20 V8",
-  "Divers":                          "M4,20 H20 V10 H30",
-  "GeExtrude":                       "M4,8 H18 V20 M18,8 V20",
-  "Habillage":                       "M4,22 H32 M4,8 H32",
-  "Lateraux":                        "M4,8 V24 H20",
-  "Lisses":                          "M4,14 H32 M4,18 H32",
-  "Profils Divers":                  "M4,8 H14 V20 H32",
-  "Solin et Ge Pliées":              "M4,20 H16 V10",
-  "Solins et Ge Pliées Accessoires": "M4,20 H14 V14 H24",
-  "Test":                            "M6,6 H30 V22 H6 Z",
-};
-
-function svgThumb(f) {
-  const d = FAM_SVG[f] || "M4,14 H32";
-  return `<svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${d}" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-}
-
-function initSelects() {
-  const ep = document.getElementById('paramEpaisseur');
-  PLIALU_EPAISSEURS.forEach(e =>
-    ep.appendChild(Object.assign(document.createElement('option'), {value: e.valeur, textContent: e.valeur + ' mm'}))
-  );
-  const fin = document.getElementById('paramFinition');
-  PLIALU_FINITIONS.forEach(f =>
-    fin.appendChild(Object.assign(document.createElement('option'), {value: f.code, textContent: f.label}))
-  );
-}
 
 function renderGammes() {
-  const grid = document.getElementById('gammesGrid');
-  grid.innerHTML = '';
+  const sel = document.getElementById('gammeSelect');
+  sel.innerHTML = '';
   PLIALU_FAMILLES.forEach(f => {
-    const el = document.createElement('div');
-    el.className = 'gamme-thumb' + (f === activeFamille ? ' active' : '');
-    el.innerHTML = svgThumb(f) + `<span>${f}</span>`;
-    el.addEventListener('click', () => selectFamille(f));
-    grid.appendChild(el);
+    const o = document.createElement('option');
+    o.value = f; o.textContent = f;
+    if (f === activeFamille) o.selected = true;
+    sel.appendChild(o);
   });
 }
 
@@ -343,7 +272,6 @@ function selectFamille(f) {
   activeFamille = f;
   activeArticle = '';
   document.getElementById('articlesTitle').textContent = f;
-  renderGammes();
   renderArticles();
 }
 
@@ -394,8 +322,8 @@ function updateSaisies(n) {
 }
 
 document.getElementById('article').addEventListener('change', e => selectArticle(e.target.value));
+document.getElementById('gammeSelect').addEventListener('change', e => selectFamille(e.target.value));
 
-initSelects();
 renderGammes();
 renderArticles();
 updateSaisies(2);
@@ -424,9 +352,9 @@ function update() {
   const {fN,aN,fV,aV}=readSaisies();
   const Lg   =parseFloat(document.getElementById('saisieLongueur').value)||0;
   const mat  =activeMaterial ? getMaterialById(activeMaterial) : null;
-  const ep   =mat ? mat.thickness : (parseFloat(document.getElementById('paramEpaisseur').value)||0.75);
-  const ral  =mat ? mat.ral  : document.getElementById('paramRal').value.trim();
-  const fin  =mat ? mat.finish : document.getElementById('paramFinition').value;
+  const ep   =mat ? mat.thickness : 0.75;
+  const ral  =mat ? mat.ral   : '';
+  const fin  =mat ? mat.finish : '';
   const qte  =Math.max(1,parseInt(document.getElementById('quantite').value)||1);
   const tarif=PLIALU_TARIFS_FAM[mat ? mat.family : null] || 18;
   const sum  =fV.reduce((s,v)=>s+v,0);
@@ -441,7 +369,6 @@ function update() {
   document.getElementById('resRefMat').textContent=refMat||'—';
   const fo={}; fN.forEach((f,i)=>{if(fV[i]>0)fo[f]=fV[i];});
   const refPiece=buildRefPiece(activeFamille,fo);
-  document.getElementById('resultRefPiece').textContent=refPiece||'—';
   const fs=fN.map((f,i)=>fV[i]?fV[i]:null).filter(Boolean).join('+');
   document.getElementById('resultDesignation').value=
     activeArticle&&fs?`${activeFamille} ${activeArticle} - ${refMat} - ${fs} - Lg ${Lg}mm`:'';
@@ -514,11 +441,8 @@ document.getElementById('article').addEventListener('change',()=>setTimeout(upda
 // ── Autocomplete matière ──
 function selectMaterial(m) {
   activeMaterial = m.id;
-  document.getElementById('matInput').value       = m.name;
+  document.getElementById('matInput').value = m.name;
   document.getElementById('matDropdown').style.display = 'none';
-  document.getElementById('paramEpaisseur').value = m.thickness + ' mm';
-  document.getElementById('paramRal').value       = m.ral  || '—';
-  document.getElementById('paramFinition').value  = m.finish || '—';
   update();
 }
 
