@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PLIALU — Configurateur</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="geometry.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -197,9 +199,9 @@ select,input[type=text],input[type=number]{font-family:inherit;}
         </div>
       </div>
 
-      <!-- Panel centre : Développé à plat -->
+      <!-- Panel centre : Vue en coupe -->
       <div class="panel-full">
-        <div class="fs-title">Développé à plat</div>
+        <div class="fs-title">Vue en coupe</div>
         <div style="padding:8px;flex:1;display:flex;flex-direction:column;">
           <div class="render-area" id="flatArea">
             <div class="render-placeholder" id="flatPlaceholder">Saisissez les cotes</div>
@@ -442,29 +444,113 @@ function update() {
   const fs=fN.map((f,i)=>fV[i]?fV[i]:null).filter(Boolean).join('+');
   document.getElementById('resultDesignation').value=
     activeArticle&&fs?`${activeFamille} ${activeArticle} - ${refMat} - ${fs} - Lg ${Lg}mm`:'';
-  renderFlat(fN,fV,aV);
+  renderCoupe(fN, fV, aV, ep);
   render3D(fN,fV,aV,Lg);
 }
 
-function renderFlat(fN,fV,aV) {
-  const svg=document.getElementById('flatSvg'),ph=document.getElementById('flatPlaceholder');
-  const sum=fV.reduce((s,v)=>s+v,0);
-  if(!sum){svg.style.display='none';ph.style.display='';return;}
-  svg.style.display='';ph.style.display='none';
-  const W=400,H=160,cy=H/2,fh=36,sc=Math.min((W-40)/sum,4);
-  let x=20,out=`<defs><pattern id="hh" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#e3e6ea" stroke-width="1.5"/></pattern></defs>`;
-  fV.forEach((len,i)=>{
-    if(!len)return; const w=len*sc;
-    out+=`<rect x="${x}" y="${cy-fh/2}" width="${w}" height="${fh}" fill="url(#hh)" stroke="#3b82f6" stroke-width="1.5"/>`;
-    out+=`<text x="${x+w/2}" y="${cy-fh/2-6}" text-anchor="middle" font-size="10" fill="#3b82f6" font-weight="bold">${fN[i]}</text>`;
-    out+=`<text x="${x+w/2}" y="${cy+fh/2+12}" text-anchor="middle" font-size="9" fill="#6b7280">${len}</text>`;
-    if(i<aV.length){
-      out+=`<line x1="${x+w}" y1="${cy-fh/2-6}" x2="${x+w}" y2="${cy+fh/2+6}" stroke="#c026d3" stroke-width="1.5" stroke-dasharray="3,2"/>`;
-      out+=`<text x="${x+w+2}" y="${cy-fh/2-8}" font-size="8" fill="#c026d3">${aV[i]}°</text>`;
-    }
-    x+=w;
+function renderCoupe(fN, fV, aV, thickness) {
+  const svg = document.getElementById('flatSvg');
+  const ph  = document.getElementById('flatPlaceholder');
+  const sum = fV.reduce((s,v)=>s+v, 0);
+  if (!sum) { svg.style.display='none'; ph.style.display=''; return; }
+  svg.style.display=''; ph.style.display='none';
+
+  const segments = fN.map((label,i) => ({label, length: fV[i]}));
+  const bends    = aV.map(v => ({angle: -(180 - v)}));
+  const th       = Math.max(thickness || 1, 1.5);
+
+  const pts     = AluGeom.computePolyline(segments, bends);
+  const flipped = pts.map(p => ({x: p.x, y: -p.y}));
+  const bb      = AluGeom.bbox(flipped);
+
+  const pad = 55;
+  const vbX = bb.minX - pad, vbY = bb.minY - pad;
+  const vbW = (bb.w || 40) + pad * 2, vbH = (bb.h || 40) + pad * 2;
+
+  let c = `<defs>
+    <pattern id="cp_grid" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#e6ebf0" stroke-width="0.3"/>
+    </pattern>
+    <pattern id="cp_gridMaj" width="50" height="50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="url(#cp_grid)"/>
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#d0d9e2" stroke-width="0.5"/>
+    </pattern>
+    <marker id="cp_arr" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2330"/>
+    </marker>
+    <marker id="cp_arrS" viewBox="0 0 10 10" refX="1" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#1a2330"/>
+    </marker>
+  </defs>
+  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="url(#cp_gridMaj)"/>`;
+
+  // Profil principal
+  const ptStr = flipped.map(p=>`${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  c += `<polyline points="${ptStr}" fill="none" stroke="#0a0f17"
+    stroke-width="${th}" stroke-linejoin="miter" stroke-linecap="butt"/>`;
+
+  // Points aux plis
+  flipped.forEach(p => {
+    c += `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2" fill="#0a0f17"/>`;
   });
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=out;
+
+  // Cotations par segment
+  const dimOff = 35, extOver = 8;
+  const cx0 = (bb.minX+bb.maxX)/2, cy0 = (bb.minY+bb.maxY)/2;
+  segments.forEach((seg, i) => {
+    if (!seg.length) return;
+    const p1=flipped[i], p2=flipped[i+1];
+    const dx=p2.x-p1.x, dy=p2.y-p1.y, L=Math.hypot(dx,dy)||1;
+    const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+    let nx=-dy/L, ny=dx/L;
+    if ((mx+nx-cx0)*nx+(my+ny-cy0)*ny < 0) { nx=-nx; ny=-ny; }
+    const ox=nx*dimOff, oy=ny*dimOff;
+    const d1={x:p1.x+ox,y:p1.y+oy}, d2={x:p2.x+ox,y:p2.y+oy};
+    const e1={x:p1.x+nx*extOver,y:p1.y+ny*extOver};
+    const e2={x:p2.x+nx*extOver,y:p2.y+ny*extOver};
+    const tx=(d1.x+d2.x)/2+nx*10, ty=(d1.y+d2.y)/2+ny*10;
+    c += `
+      <line x1="${e1.x.toFixed(1)}" y1="${e1.y.toFixed(1)}" x2="${d1.x.toFixed(1)}" y2="${d1.y.toFixed(1)}"
+        stroke="#1a2330" stroke-width="0.5"/>
+      <line x1="${e2.x.toFixed(1)}" y1="${e2.y.toFixed(1)}" x2="${d2.x.toFixed(1)}" y2="${d2.y.toFixed(1)}"
+        stroke="#1a2330" stroke-width="0.5"/>
+      <line x1="${d1.x.toFixed(1)}" y1="${d1.y.toFixed(1)}" x2="${d2.x.toFixed(1)}" y2="${d2.y.toFixed(1)}"
+        stroke="#1a2330" stroke-width="0.8"
+        marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>
+      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="#1a2330" font-size="11"
+        font-family="JetBrains Mono,monospace" font-weight="600"
+        text-anchor="middle">${seg.label} ${Math.round(seg.length)}</text>`;
+  });
+
+  // Arcs d'angle aux plis
+  bends.forEach((bend, i) => {
+    const p=flipped[i+1];
+    if (!p || !flipped[i] || !flipped[i+2]) return;
+    const prev=flipped[i], next=flipped[i+2];
+    const dx1=prev.x-p.x, dy1=prev.y-p.y, L1=Math.hypot(dx1,dy1)||1;
+    const dx2=next.x-p.x, dy2=next.y-p.y, L2=Math.hypot(dx2,dy2)||1;
+    const u1x=dx1/L1, u1y=dy1/L1, u2x=dx2/L2, u2y=dy2/L2;
+    const r=20;
+    const a1=Math.atan2(u1y,u1x), a2=Math.atan2(u2y,u2x);
+    const cross=u1x*u2y-u1y*u2x;
+    let mid=(a1+a2)/2; if(cross<0) mid+=Math.PI;
+    const tx=p.x+Math.cos(mid)*(r+16), ty=p.y+Math.sin(mid)*(r+16);
+    const sx=p.x+Math.cos(a1)*r, sy=p.y+Math.sin(a1)*r;
+    const ex=p.x+Math.cos(a2)*r, ey=p.y+Math.sin(a2)*r;
+    const laf=cross<0?1:0;
+    const displayAngle=Math.round(180-Math.abs(bend.angle));
+    c += `
+      <path d="M${sx.toFixed(1)},${sy.toFixed(1)} A${r},${r} 0 0,${laf} ${ex.toFixed(1)},${ey.toFixed(1)}"
+        fill="none" stroke="#e85d2f" stroke-width="1.2"/>
+      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="#e85d2f" font-size="10"
+        font-family="JetBrains Mono,monospace" font-weight="700"
+        text-anchor="middle">${displayAngle}°</text>`;
+  });
+
+  svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+  svg.innerHTML = c;
 }
 
 function render3D(fN,fV,aV,Lg) {
