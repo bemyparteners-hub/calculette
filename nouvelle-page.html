@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PLIALU — Configurateur</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -578,7 +579,93 @@ try {
   if (_s.devisLignes) { devisLignes = _s.devisLignes; renderDevis(); }
 } catch(e) {}
 
-// ── Bloc B2-2 (PDF) à venir ──
+// ── Bloc B2-2 : PDF ──
+function _svgToPng(svgStr, w, h) {
+  return new Promise(res => {
+    if (!svgStr) return res(null);
+    const blob = new Blob([svgStr], {type:'image/svg+xml'});
+    const url  = URL.createObjectURL(blob);
+    const img  = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/png'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.src = url;
+  });
+}
+
+async function genererPDF() {
+  if (!devisLignes.length) { showToast('⚠ Devis vide','err'); return; }
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!jsPDF) { showToast('⚠ jsPDF non chargé','err'); return; }
+  const imgs = await Promise.all(devisLignes.map(l => _svgToPng(l.svgIso, 180, 120)));
+  const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+  const PW=210, PH=297, ML=14, MR=14, CW=182;
+  const DARK=[26,31,46], WHITE=[255,255,255], GREY=[248,248,250];
+  // ── En-tête ──
+  doc.setFillColor(...DARK); doc.rect(0,0,PW,26,'F');
+  doc.setTextColor(203,255,0); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('● PLIALU', ML, 11);
+  doc.setTextColor(160,175,190); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Façonnage aluminium sur mesure', ML, 17);
+  const num='DEV-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*900+100));
+  doc.setTextColor(203,255,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('DEVIS', PW-MR, 10, {align:'right'});
+  doc.setFontSize(8); doc.text(num, PW-MR, 16, {align:'right'});
+  // ── Client ──
+  let y=32;
+  const client  = document.getElementById('inputClient')?.value||'—';
+  const affaire = document.getElementById('inputAffaire')?.value||'—';
+  doc.setTextColor(40,42,54); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text(`Client : ${client}`,  ML, y);
+  doc.text(`Affaire : ${affaire}`, ML, y+5);
+  doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}   |   Validité : 30 jours`, ML, y+10);
+  y+=17;
+  // ── En-têtes tableau ──
+  const COLS=[{l:'Désignation',w:68},{l:'Réf mat.',w:28},{l:'DVP mm',w:16},
+              {l:'Lg mm',w:16},{l:'Qté',w:10},{l:'PU HT €',w:22},{l:'Total HT €',w:22}];
+  doc.setFillColor(...DARK); doc.rect(ML,y,CW,7,'F');
+  doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  let cx=ML+2; COLS.forEach(c=>{doc.text(c.l,cx,y+4.8);cx+=c.w;}); y+=7;
+  // ── Lignes ──
+  for (let i=0;i<devisLignes.length;i++) {
+    const l=devisLignes[i], RH=22;
+    if (y+RH>PH-22) { _addFooter(doc,PW,PH); doc.addPage(); y=14; }
+    if (i%2) { doc.setFillColor(...GREY); doc.rect(ML,y,CW,RH,'F'); }
+    if (imgs[i]) try { doc.addImage(imgs[i],'PNG',ML+1,y+1,28,18); } catch(e){}
+    doc.setTextColor(40,42,54); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text((l.designation||'—').slice(0,42), ML+31, y+7);
+    doc.setFontSize(7); cx=ML+COLS[0].w+2;
+    [l.refMat||'—', (+l.dvp).toFixed(0), ''+l.lg, ''+l.qte,
+     (+l.puHT).toFixed(2), (+l.totalHT).toFixed(2)]
+      .forEach((v,j)=>{doc.text(v,cx,y+11);cx+=COLS[j+1].w;});
+    y+=RH;
+  }
+  // ── Totaux ──
+  y+=5;
+  const ht=devisLignes.reduce((s,l)=>s+(+l.totalHT),0), tva=ht*.2;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(40,42,54);
+  doc.text('Total HT',  PW-MR-44,y); doc.text(ht.toFixed(2)+' €', PW-MR,y,{align:'right'}); y+=6;
+  doc.text('TVA 20 %',  PW-MR-44,y); doc.text(tva.toFixed(2)+' €',PW-MR,y,{align:'right'}); y+=3;
+  doc.setFillColor(...DARK); doc.rect(PW-MR-56,y,56,9,'F');
+  doc.setTextColor(203,255,0); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('Total TTC', PW-MR-54,y+6);
+  doc.text((ht+tva).toFixed(2)+' €', PW-MR-1,y+6,{align:'right'});
+  _addFooter(doc,PW,PH);
+  doc.save(`PLIALU_${num}.pdf`);
+}
+
+function _addFooter(doc,PW,PH) {
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(150,155,165);
+  doc.text('PLIALU — Façonnage aluminium sur mesure', 14, PH-5);
+  doc.text('Page '+doc.internal.getCurrentPageInfo().pageNumber, PW-14, PH-5,{align:'right'});
+}
+
+document.getElementById('btnGenPDF').addEventListener('click', genererPDF);
+document.getElementById('btnGenererPDF').addEventListener('click', genererPDF);
+
 })();
 </script>
 </body>
