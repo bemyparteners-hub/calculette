@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurateur V2 — PLIALU</title>
+  <!-- Bootstrap 4 core (layout, utilities) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <!-- BootstrapVue components CSS (sidebar, form, toast, etc.) -->
+  <link rel="stylesheet" href="easytest2.css">
+  <style>
+    /* ── Charte PLIALU ── */
+    :root {
+      --plialu-dark: #0d2933;
+      --plialu-accent: #e8fc69;
+      --plialu-bg: #f0f4f8;
+      --plialu-text: #1a2e38;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--plialu-bg);
+      color: var(--plialu-text);
+    }
+
+    /* ── Navbar ── */
+    .plialu-nav {
+      background: var(--plialu-dark);
+      color: #fff;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 1100;
+    }
+    .plialu-nav .brand {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--plialu-accent);
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+    .plialu-nav .badge-v2 {
+      background: var(--plialu-accent);
+      color: var(--plialu-dark);
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .plialu-nav .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+    .plialu-nav .nav-links a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .plialu-nav .nav-links a:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* ── Zone configurateur ── */
+    #configurator-wrapper {
+      min-height: calc(100vh - 56px);
+    }
+
+    /* Force le configurateur à prendre toute la largeur */
+    #product-configurator {
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Chargement ── */
+    #loading-overlay {
+      position: fixed;
+      inset: 56px 0 0 0;
+      background: var(--plialu-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 16px;
+    }
+    #loading-overlay .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(13,41,51,0.15);
+      border-top-color: var(--plialu-dark);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    #loading-overlay p {
+      color: var(--plialu-dark);
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar PLIALU -->
+  <nav class="plialu-nav">
+    <a href="index.html" class="brand">PLIALU</a>
+    <span class="badge-v2">CONFIG V2</span>
+    <div class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="calcul.html">Calculette</a>
+      <a href="devis.html">Devis</a>
+    </div>
+  </nav>
+
+  <!-- Overlay de chargement -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Chargement du configurateur…</p>
+  </div>
+
+  <!-- Point de montage Vue -->
+  <div id="configurator-wrapper">
+    <div id="product-configurator"></div>
+  </div>
+
+  <script>
+  // ══════════════════════════════════════════════════════
+  // 1. Locale
+  // ══════════════════════════════════════════════════════
+  window.vue_locale = 'fr_FR';
+
+  // ══════════════════════════════════════════════════════
+  // 2. Traductions (injectées directement, pas de fetch)
+  // ══════════════════════════════════════════════════════
+  (function () {
+    var msgs = {
+      'messages.app:configurator:main_title'                               : 'Configurateur de profilés aluminium',
+      'messages.app:configurator:my_configuration'                         : 'Ma configuration',
+      'messages.app:configurator:finish_and_colors'                        : '1) Finition & couleur',
+      'messages.app:configurator:standard_colors'                          : 'Couleurs standards',
+      'messages.app:configurator:thickness'                                : '2) Épaisseur',
+      'messages.app:configurator:dimensions'                               : '3) Dimensions',
+      'messages.app:configurator:plotting_tools'                           : 'Outils de dessin',
+      'messages.app:configurator:predefinies_shapes'                       : 'Formes prédéfinies',
+      'messages.app:configurator:tutorial'                                 : 'Tutoriel',
+      'messages.app:configurator:previous_step'                            : 'Étape précédente',
+      'messages.app:configurator:next_step'                                : 'Étape suivante',
+      'messages.app:configurator:add_cart'                                 : 'Ajouter au devis',
+      'messages.app:configurator:need_help'                                : 'Besoin d\'aide ?',
+      'messages.app:configurator:contact_us'                               : 'Contactez-nous',
+      'messages.app:configurator:help'                                     : 'Aide',
+      'messages.app:configurator:length_title'                             : 'Longueur du profilé (mm)',
+      'messages.app:configurator:length_desc'                              : 'Saisissez la longueur souhaitée en millimètres.',
+      'messages.app:configurator:angle_title'                              : 'Angles de pliage',
+      'messages.app:configurator:how_to_enter_dimension'                   : 'Cliquez sur un segment pour modifier sa longueur ou son angle.',
+      'messages.app:configurator:how_to_calculate_the_length'              : 'Comment calculer la longueur ?',
+      'messages.app:configurator:how_to_choose_the_thickness'              : 'Comment choisir l\'épaisseur ?',
+      'messages.app:configurator:add_another_length'                       : 'Ajouter une longueur',
+      'messages.app:configurator:length'                                   : 'Longueur',
+      'messages.app:configurator:quantity'                                 : 'Quantité',
+      'messages.app:configurator:mm'                                       : 'mm',
+      'messages.app:configurator:°'                                        : '°',
+      'messages.app:configurator:total_amount'                             : 'Montant total',
+      'messages.app:configurator:ttc'                                      : 'TTC',
+      'messages.app:configurator:including_taxes'                          : 'dont TVA',
+      'messages.app:configurator:pre_painted_side'                         : 'Face laquée',
+      'messages.app:configurator:edit_pre_painted_side'                    : 'Modifier la face laquée',
+      'messages.app:configurator:what_is_the_pre_painted_side'             : 'Qu\'est-ce que la face laquée ?',
+      'messages.app:configurator:message_alert_info_schema'                : 'Ce schéma est indicatif. Vérifiez vos dimensions avant commande.',
+      'messages.app:configurator:delete_segment_warning'                   : 'Supprimer ce segment ?',
+      'messages.app:configurator:delete_main_segment_warning'              : 'Impossible de supprimer le segment principal.',
+      'messages.app:configurator:plotting_btn:center_drawing'              : 'Centrer le dessin',
+      'messages.app:configurator:plotting_btn:delete_segment'              : 'Supprimer le segment',
+      'messages.app:configurator:plotting_btn:inside_fold'                 : 'Pli vers l\'intérieur',
+      'messages.app:configurator:plotting_btn:outer_fold'                  : 'Pli vers l\'extérieur',
+      'messages.app:configurator:plotting_btn:add_segment_left'            : 'Ajouter un segment à gauche',
+      'messages.app:configurator:plotting_btn:add_segment_right'           : 'Ajouter un segment à droite',
+      // Color types (dynamiques : e.toLowerCase())
+      'messages.app:configurator:raw_finish'                               : 'Brut',
+      'messages.app:configurator:pre_painted_color'                        : 'Prélaqué couleur',
+      'messages.app:configurator:prelaque_standard'                        : 'Prélaqué standard',
+      'messages.app:configurator:prelaque_sable'                           : 'Prélaqué sablé',
+      'messages.app:configurator:prelaque_specifique'                      : 'Prélaqué spécifique',
+      'messages.app:configurator:ral_surface'                              : 'Surface RAL',
+      // Messages de validation (avec placeholders vue-i18n {x}, {count}, etc.)
+      'messages.app:configurator:the_shape_length_must_be_x_mm_at_least'  : 'La longueur totale doit être au minimum {x} mm.',
+      'messages.app:configurator:the_shape_length_must_be_x_mm_at_most'   : 'La longueur totale ne peut pas dépasser {x} mm.',
+      'messages.app:configurator:you_reached_the_maximum_number_of_folds_x': 'Nombre maximum de plis atteint ({count}).',
+      'messages.app:configurator:the_max_expanded_length_is_x'            : 'Le développé maximum est {x} mm.',
+      'messages.app:configurator:the_length_must_be_at_least_x'           : 'La longueur doit être au minimum {x} mm.',
+      'messages.app:configurator:the_angle_must_be_at_least_x'            : 'L\'angle doit être au minimum {x}°.',
+      'messages.app:configurator:the_crushed_segment_length_should_be_between_x_and_x':
+                                                                             'La longueur de l\'écrasé doit être entre {minLength} et {maxLength} mm.',
+    };
+    try {
+      sessionStorage.setItem('configurator.version', '0.0.2');
+      sessionStorage.setItem('configurator.messages.fr_FR', JSON.stringify(msgs));
+    } catch (e) {
+      // sessionStorage indisponible (mode privé strict) — l'app fera un fetch
+    }
+  })();
+
+  // ══════════════════════════════════════════════════════
+  // 3. Intercepteur fetch (traductions + addToCart)
+  // ══════════════════════════════════════════════════════
+  (function () {
+    var _fetch = window.fetch.bind(window);
+    window.fetch = function (url, opts) {
+      var u = typeof url === 'string' ? url : (url && url.url) || '';
+
+      // Endpoint traductions
+      if (u.indexOf('configurator-translations') !== -1) {
+        var msgs = JSON.parse(sessionStorage.getItem('configurator.messages.fr_FR') || '{}');
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: function () { return Promise.resolve({ fr_FR: msgs }); }
+        });
+      }
+
+      // Endpoint ajout panier → redirige vers devis.html
+      if (u.indexOf('addToCart') !== -1 || u.indexOf('add-to-cart') !== -1) {
+        alert('✔ Configuration enregistrée. Redirection vers le module Devis…');
+        setTimeout(function () { window.location.href = 'devis.html'; }, 300);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: function () { return Promise.resolve({ success: true }); }
+        });
+      }
+
+      return _fetch(url, opts);
+    };
+  })();
+
+  // ══════════════════════════════════════════════════════
+  // 4. Données produits PLIALU
+  // ══════════════════════════════════════════════════════
+  function makeSwatch(hex) {
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect width='60' height='60' fill='" + hex + "'/%3E%3C/svg%3E";
+  }
+
+  window.vue_configurator_configuration = JSON.stringify({
+    addToCartUri: '/addToCart',
+    cartUri: '/devis.html',
+
+    colorConfiguration: {
+      options: [
+        { code: 'brut',    name: 'Aluminium brut',   ralColor: null,       colorType: 'RAW_FINISH',        image: makeSwatch('%23c8cdd1') },
+        { code: 'ral9010', name: 'Blanc pur',         ralColor: 'RAL 9010', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23f4f0e6') },
+        { code: 'ral9006', name: 'Aluminium blanc',   ralColor: 'RAL 9006', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23a8aaac') },
+        { code: 'ral7016', name: 'Gris anthracite',   ralColor: 'RAL 7016', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23383e42') },
+        { code: 'ral7015', name: 'Gris ardoise',      ralColor: 'RAL 7015', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23515560') },
+        { code: 'ral8019', name: 'Brun gris',         ralColor: 'RAL 8019', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23463f3a') },
+        { code: 'ral3009', name: 'Rouge oxyde',       ralColor: 'RAL 3009', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23723332') },
+        { code: 'ral6009', name: 'Vert sapin',        ralColor: 'RAL 6009', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%2331392b') },
+      ]
+    },
+
+    thicknessConfiguration: {
+      options: [
+        { code: '10_10', name: '10/10  (1,0 mm)' },
+        { code: '15_10', name: '15/10  (1,5 mm)' },
+        { code: '20_10', name: '20/10  (2,0 mm)' },
+        { code: '25_10', name: '25/10  (2,5 mm)' },
+        { code: '30_10', name: '30/10  (3,0 mm)' },
+      ]
+    },
+
+    availableVariants: (function () {
+      var colors     = ['brut','ral9010','ral9006','ral7016','ral7015','ral8019','ral3009','ral6009'];
+      var thicknesses= ['10_10','15_10','20_10','25_10','30_10'];
+      var pricingBase= { brut:'brut', ral9010:'laque', ral9006:'laque', ral7016:'laque', ral7015:'laque', ral8019:'laque', ral3009:'laque', ral6009:'laque' };
+      var variants = [];
+      colors.forEach(function (c) {
+        thicknesses.forEach(function (th) {
+          variants.push({
+            gridPricingCode: pricingBase[c] + '_' + th,
+            taxRate: { rate: 0.20, isIncludedInPrice: false },
+            optionValues: [
+              { optionCode: 'RAL_COLOR', code: c },
+              { optionCode: 'THICKNESS', code: th }
+            ],
+            enabled: true
+          });
+        });
+      });
+      return variants;
+    })(),
+
+    configuratorConfiguration: {
+      maxCrushedLength : 30,
+      maxExpendedLength: 3000,
+      maxFoldsCount    : 6,
+      maxShapeLength   : 2500,
+      minCrushedLength : 5,
+      minSegmentLength : 15,
+      minFoldAngle     : 15,
+      minShapeLength   : 50
+    },
+
+    // Tarifs HT €/ml — par code pricing
+    gridPricings: (function () {
+      var p = {};
+      var thicknesses = ['10_10','15_10','20_10','25_10','30_10'];
+      // Prix base brut (€/m) selon épaisseur
+      var brutBase = { '10_10':6.5, '15_10':9.0, '20_10':12.0, '25_10':15.5, '30_10':19.0 };
+      // Supplément laquage (€/m)
+      var laqueSup = { '10_10':5.0, '15_10':5.5, '20_10':6.0, '25_10':7.0, '30_10':8.0 };
+
+      // Tranches de longueur développée (mm) → dégressif
+      var tranches = [250, 500, 1000, 1500, 2000, 2500, 3000];
+
+      thicknesses.forEach(function (th) {
+        var base = brutBase[th];
+        var sup  = laqueSup[th];
+
+        p['brut_' + th] = tranches.map(function (maxL, i) {
+          var factor = 1 - i * 0.03; // dégressif 3%/tranche
+          return { maxLength: maxL, price: +(base * factor).toFixed(2) };
+        });
+
+        p['laque_' + th] = tranches.map(function (maxL, i) {
+          var factor = 1 - i * 0.025;
+          return { maxLength: maxL, price: +((base + sup) * factor).toFixed(2) };
+        });
+      });
+
+      return p;
+    })()
+  });
+
+  // ══════════════════════════════════════════════════════
+  // 5. Masquer l'overlay dès que Vue monte (#product-configurator peuplé)
+  // ══════════════════════════════════════════════════════
+  (function () {
+    var overlay = document.getElementById('loading-overlay');
+    var target  = document.getElementById('product-configurator');
+    var observer = new MutationObserver(function () {
+      if (target.children.length > 0) {
+        overlay.style.transition = 'opacity 0.3s';
+        overlay.style.opacity = '0';
+        setTimeout(function () { overlay.remove(); }, 350);
+        observer.disconnect();
+      }
+    });
+    observer.observe(target, { childList: true, subtree: false });
+    // Fallback : masquer après 10s
+    setTimeout(function () { overlay && overlay.remove(); }, 10000);
+  })();
+  </script>
+
+  <!-- Configurateur Easypliage (Vue 2 + Vuex + BootstrapVue bundlé) -->
+  <script src="easytest.js"></script>
+
+</body>
+</html>
