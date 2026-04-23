@@ -35,9 +35,10 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 .fs-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:9px 12px 7px;border-bottom:1px solid var(--line);background:#fafbfc;flex-shrink:0;}
 .fs-body{padding:10px 12px;display:flex;flex-direction:column;gap:7px;flex:1;}
 
-/* ── Article select ── */
-.article-preview{border:1px solid var(--line);border-radius:4px;background:#fafbfc;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+/* ── Article / Gamme image ── */
+.article-preview{border:1px solid var(--line);border-radius:4px;background:#fafbfc;height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
 .article-preview svg{max-width:100%;max-height:100%;}
+.gamme-img-wrap{margin-top:6px;border:1px solid var(--line);border-radius:4px;background:#fafbfc;height:120px;display:none;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
 
 /* ── Paramètres ── */
 .param-row{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;align-items:center;}
@@ -77,9 +78,9 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 .render-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-style:italic;}
 
 /* ── Saisies ── */
-.saisie-row{display:flex;align-items:center;gap:6px;}
-.saisie-row label{font-size:11px;color:var(--muted);width:55px;flex-shrink:0;}
-.saisie-row input{flex:1;border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;outline:none;}
+.saisie-row{display:flex;align-items:center;gap:5px;}
+.saisie-row label{font-size:11px;color:var(--muted);width:40px;flex-shrink:0;white-space:nowrap;}
+.saisie-row input{flex:1;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-size:12px;outline:none;height:26px;}
 .saisie-row input:focus{border-color:var(--accent);}
 .saisie-row.dim-angle label{color:var(--fold);}
 .saisie-row.dim-angle input{border-color:#e9d5ff;}
@@ -133,6 +134,9 @@ select,input[type=text],input[type=number]{font-family:inherit;}
       <div class="fs-title">Gammes</div>
       <div class="fs-body">
         <select id="gammeSelect" style="border:1px solid var(--line);border-radius:4px;padding:5px 7px;font-size:12px;background:#fff;color:var(--text);outline:none;width:100%;"></select>
+        <div class="gamme-img-wrap" id="gammeImgWrap">
+          <img id="gammeImg" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;">
+        </div>
       </div>
     </div>
 
@@ -142,7 +146,7 @@ select,input[type=text],input[type=number]{font-family:inherit;}
       <div class="fs-body">
         <div class="article-preview" id="articlePreview">
           <img id="articleImg" src="" alt=""
-               style="width:100%;height:100%;object-fit:contain;display:none;">
+               style="width:100%;height:100%;object-fit:contain;display:none;cursor:zoom-in;">
           <svg id="articleSvgFallback" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="10" y="28" width="60" height="10" rx="1" fill="#e3e6ea"/>
           </svg>
@@ -214,7 +218,7 @@ select,input[type=text],input[type=number]{font-family:inherit;}
           </div>
           <div class="lbl" style="flex-shrink:0;">Saisies (mm / °)</div>
           <div style="overflow-y:auto;flex-shrink:0;max-height:160px;">
-            <div id="saisiesContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"></div>
+            <div id="saisiesContainer" style="display:flex;flex-direction:column;gap:3px;"></div>
           </div>
           <div class="saisie-row" style="flex-shrink:0;border-top:1px solid var(--line);padding-top:6px;">
             <label style="width:65px;font-size:11px;color:var(--muted);">Long. mm</label>
@@ -240,6 +244,12 @@ select,input[type=text],input[type=number]{font-family:inherit;}
   </div>
 
 </div><!-- /.app -->
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="this.style.display='none'"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out;">
+  <img id="lightboxImg" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px #000;">
+</div>
 
 <script src="plialu-materials.js"></script>
 <script src="plialu-data.js"></script>
@@ -279,12 +289,29 @@ function renderGammes() {
   });
 }
 
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
 function selectFamille(f) {
   activeFamille = f;
   activeArticle = '';
   document.getElementById('articlesTitle').textContent = f;
   renderArticles();
   tryLoadArticleImage('', f);
+  // Gamme image
+  const wrap = document.getElementById('gammeImgWrap');
+  const gImg = document.getElementById('gammeImg');
+  const url  = GAMME_FALLBACK_IMG[f];
+  if (url) {
+    gImg.onload  = () => { wrap.style.display = 'flex'; };
+    gImg.onerror = () => { wrap.style.display = 'none'; };
+    gImg.src = url;
+  } else {
+    wrap.style.display = 'none';
+    gImg.src = '';
+  }
 }
 
 function renderArticles() {
@@ -363,10 +390,13 @@ function updateSaisies(n) {
 
 document.getElementById('article').addEventListener('change', e => selectArticle(e.target.value));
 document.getElementById('gammeSelect').addEventListener('change', e => selectFamille(e.target.value));
+document.getElementById('articleImg').onclick = function() { if (this.src) openLightbox(this.src); };
+document.getElementById('gammeImg').onclick    = function() { if (this.src) openLightbox(this.src); };
 
 renderGammes();
 renderArticles();
 updateSaisies(2);
+selectFamille(activeFamille);
 // ── Bloc B1 : update + renderFlat + render3D ──
 
 function readSaisies() {
