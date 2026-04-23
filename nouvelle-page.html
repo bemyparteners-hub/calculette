@@ -75,8 +75,9 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 .btn-vider:hover{background:#fee2e2;}
 
 /* ── Render areas ── */
-.render-area{flex:1;border:1px solid var(--line);border-radius:4px;background:#fafbfc;position:relative;overflow:hidden;min-height:200px;}
-.render-area svg,#flatSvg,#iso3d{width:100%;height:100%;display:block;}
+.render-area{position:relative;width:100%;height:340px !important;min-height:340px !important;max-height:340px !important;overflow:hidden;background:#fafbfc;border:1px solid #e0e0e0;border-radius:4px;}
+.render-area svg{width:100%;height:100%;display:block;}
+#flatSvg,#iso3d{position:absolute;top:0;left:0;width:100% !important;height:100% !important;display:block;}
 .render-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-style:italic;}
 
 /* ── Saisies ── */
