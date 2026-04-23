@@ -119,29 +119,6 @@
     /* Masquer l'aide desktop (prend de la place inutilement) */
     .help-wrapper-desktop        { display: none !important; }
 
-    /* ── Indicateur matière dans la navbar ── */
-    .mat-pill {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #fff;
-      font-size: 0.78rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .mat-pill select {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 0.78rem;
-      cursor: pointer;
-      outline: none;
-      padding: 0;
-    }
-    .mat-pill select option { color: #1a2e38; background: #fff; }
-    .mat-pill .sep { opacity: 0.4; }
   </style>
 </head>
 <body>
@@ -150,36 +127,6 @@
   <nav class="plialu-nav">
     <a href="index.html" class="brand">PLIALU</a>
     <span class="badge-v2">CONFIG V2</span>
-
-    <!-- Sélecteurs matière / épaisseur dans la barre (actionnent le store Vuex) -->
-    <div class="mat-pill">
-      <select id="nav-color" title="Couleur / finition">
-        <option value="ALUMINIUM">Aluminium brut</option>
-        <option value="RAL1013" selected>RAL 1013 — Blanc perlé</option>
-        <option value="RAL9010">RAL 9010 — Blanc pur</option>
-        <option value="RAL9002">RAL 9002 — Blanc gris</option>
-        <option value="RAL9006">RAL 9006 — Alu blanc</option>
-        <option value="RAL7016">RAL 7016 — Anthracite</option>
-        <option value="RAL7015">RAL 7015 — Gris ardoise</option>
-        <option value="RAL7021">RAL 7021 — Gris noir</option>
-        <option value="RAL7035">RAL 7035 — Gris clair</option>
-        <option value="RAL8019">RAL 8019 — Brun gris</option>
-        <option value="RAL8017">RAL 8017 — Brun chocolat</option>
-        <option value="RAL3009">RAL 3009 — Rouge oxyde</option>
-        <option value="RAL6009">RAL 6009 — Vert sapin</option>
-        <option value="RAL6005">RAL 6005 — Vert mousse</option>
-        <option value="RAL5010">RAL 5010 — Bleu gentiane</option>
-        <option value="RAL9005">RAL 9005 — Noir foncé</option>
-        <option value="ALUANODISE">Aluminium anodisé</option>
-        <option value="CORTEN">Acier Corten</option>
-      </select>
-      <span class="sep">|</span>
-      <select id="nav-thickness" title="Épaisseur">
-        <option value="08">8/10 (0,8 mm)</option>
-        <option value="1">10/10 (1,0 mm)</option>
-        <option value="15" selected>15/10 (1,5 mm)</option>
-      </select>
-    </div>
 
     <div class="nav-links">
       <a href="index.html">Accueil</a>
@@ -456,27 +403,7 @@
       store.commit('configuration/setThicknessSelectedOption', defaultThickness);
       store.dispatch('step/setStep', 'drawingBoard');
 
-      // Brancher les selects de la navbar sur le store
-      bindNavSelects(store, colorOpts, thicknessOpts);
-
       hideOverlay();
-    }
-
-    // Connecte les <select> de la navbar au store Vuex
-    function bindNavSelects(store, colorOpts, thicknessOpts) {
-      var navColor = document.getElementById('nav-color');
-      var navThick = document.getElementById('nav-thickness');
-      if (!navColor || !navThick) return;
-
-      navColor.addEventListener('change', function () {
-        var opt = colorOpts.find(function (o) { return o.code === navColor.value; });
-        if (opt) store.commit('configuration/setColorSelectedOption', opt);
-      });
-
-      navThick.addEventListener('change', function () {
-        var opt = thicknessOpts.find(function (o) { return o.code === navThick.value; });
-        if (opt) store.commit('configuration/setThicknessSelectedOption', opt);
-      });
     }
 
     // Observer : dès que Vue peuple #product-configurator, tenter le skip
