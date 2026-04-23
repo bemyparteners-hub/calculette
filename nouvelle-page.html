@@ -76,7 +76,7 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 
 /* ── Render areas ── */
 .render-area{flex:1;border:1px solid var(--line);border-radius:4px;background:#fafbfc;position:relative;overflow:hidden;min-height:200px;}
-.render-area svg{width:100%;height:100%;}
+.render-area svg,#flatSvg,#iso3d{width:100%;height:100%;display:block;}
 .render-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-style:italic;}
 
 /* ── Saisies ── */
@@ -205,7 +205,7 @@ select,input[type=text],input[type=number]{font-family:inherit;}
         <div style="padding:8px;flex:1;display:flex;flex-direction:column;">
           <div class="render-area" id="flatArea">
             <div class="render-placeholder" id="flatPlaceholder">Saisissez les cotes</div>
-            <svg id="flatSvg" style="display:none;" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="flatSvg" width="100%" height="100%" style="display:none;" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
         </div>
       </div>
@@ -216,7 +216,7 @@ select,input[type=text],input[type=number]{font-family:inherit;}
         <div style="display:flex;flex-direction:column;flex:1;padding:8px;gap:8px;overflow:hidden;">
           <div class="render-area" id="isoArea" style="min-height:180px;flex:1;">
             <div class="render-placeholder" id="isoPlaceholder">Saisissez les cotes</div>
-            <svg id="iso3d" style="display:none;" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="iso3d" width="100%" height="100%" style="display:none;" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
           <div class="lbl" style="flex-shrink:0;">Saisies (mm / °)</div>
           <div style="overflow-y:auto;flex-shrink:0;max-height:160px;">
@@ -463,9 +463,12 @@ function renderCoupe(fN, fV, aV, thickness) {
   const flipped = pts.map(p => ({x: p.x, y: -p.y}));
   const bb      = AluGeom.bbox(flipped);
 
-  const pad = Math.max(60, bb.w * 0.15, bb.h * 0.15);
-  const vbX = bb.minX - pad, vbY = bb.minY - pad;
-  const vbW = (bb.w || 40) + pad * 2, vbH = (bb.h || 40) + pad * 2;
+  const pad     = Math.max(60, bb.w * 0.15, bb.h * 0.15);
+  const minSize = 100;
+  const vbW = Math.max((bb.w || 40) + pad * 2, minSize);
+  const vbH = Math.max((bb.h || 40) + pad * 2, minSize);
+  const vbX = bb.minX - (vbW - (bb.w || 40)) / 2;
+  const vbY = bb.minY - (vbH - (bb.h || 40)) / 2;
 
   let c = `<defs>
     <pattern id="cp_grid" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -550,6 +553,7 @@ function renderCoupe(fN, fV, aV, thickness) {
   });
 
   svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   svg.innerHTML = c;
 }
 
@@ -583,7 +587,9 @@ function render3D(fN,fV,aV,Lg) {
   out+=`<path d="${bk}" fill="none" stroke="#9ca3af" stroke-width="1"/>`;
   out+=`<path d="${fr}" fill="none" stroke="#111" stroke-width="2"/>`;
   out+=`<text x="${(p0.x+p1.x)/2}" y="${Math.min(p0.y,p1.y)-4}" text-anchor="middle" font-size="9" fill="#3b82f6">Lg ${Lg}mm</text>`;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=out;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  svg.innerHTML=out;
 }
 
 // Wiring : debounce toutes les saisies → update()
