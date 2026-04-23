@@ -108,6 +108,40 @@
       opacity: 0.7;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Masquer les étapes 1 & 2 ── */
+    /* Header avec titre + breadcrumb 1/2/3 */
+    .configurator-summary-header { display: none !important; }
+    /* Bouton "Étape précédente" (inutile si on démarre à l'étape 3) */
+    .previous-step               { display: none !important; }
+    /* Sécurité : cacher le breadcrumb s'il apparaît ailleurs */
+    .configurator-step-wrapper   { display: none !important; }
+    /* Masquer l'aide desktop (prend de la place inutilement) */
+    .help-wrapper-desktop        { display: none !important; }
+
+    /* ── Indicateur matière dans la navbar ── */
+    .mat-pill {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 0.78rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mat-pill select {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.78rem;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+    }
+    .mat-pill select option { color: #1a2e38; background: #fff; }
+    .mat-pill .sep { opacity: 0.4; }
   </style>
 </head>
 <body>
@@ -116,6 +150,29 @@
   <nav class="plialu-nav">
     <a href="index.html" class="brand">PLIALU</a>
     <span class="badge-v2">CONFIG V2</span>
+
+    <!-- Sélecteurs matière / épaisseur dans la barre (actionnent le store Vuex) -->
+    <div class="mat-pill">
+      <select id="nav-color" title="Couleur / finition">
+        <option value="brut">Brut</option>
+        <option value="ral9010">RAL 9010 — Blanc</option>
+        <option value="ral9006">RAL 9006 — Alu blanc</option>
+        <option value="ral7016">RAL 7016 — Anthracite</option>
+        <option value="ral7015">RAL 7015 — Gris ardoise</option>
+        <option value="ral8019">RAL 8019 — Brun gris</option>
+        <option value="ral3009">RAL 3009 — Rouge oxyde</option>
+        <option value="ral6009">RAL 6009 — Vert sapin</option>
+      </select>
+      <span class="sep">|</span>
+      <select id="nav-thickness" title="Épaisseur">
+        <option value="10_10">10/10</option>
+        <option value="15_10" selected>15/10</option>
+        <option value="20_10">20/10</option>
+        <option value="25_10">25/10</option>
+        <option value="30_10">30/10</option>
+      </select>
+    </div>
+
     <div class="nav-links">
       <a href="index.html">Accueil</a>
       <a href="calcul.html">Calculette</a>
@@ -342,22 +399,75 @@
   });
 
   // ══════════════════════════════════════════════════════
-  // 5. Masquer l'overlay dès que Vue monte (#product-configurator peuplé)
+  // 5. Après le montage Vue : skip vers l'étape drawingBoard
   // ══════════════════════════════════════════════════════
   (function () {
-    var overlay = document.getElementById('loading-overlay');
-    var target  = document.getElementById('product-configurator');
+    var overlay  = document.getElementById('loading-overlay');
+    var target   = document.getElementById('product-configurator');
+    var skipped  = false;
+
+    function hideOverlay() {
+      if (!overlay) return;
+      overlay.style.transition = 'opacity 0.3s';
+      overlay.style.opacity = '0';
+      setTimeout(function () { overlay && overlay.remove(); overlay = null; }, 350);
+    }
+
+    // Accède au store et pré-sélectionne couleur + épaisseur puis saute à l'étape 3
+    function skipToDrawingBoard() {
+      if (skipped) return;
+      var vue = target.__vue__;
+      if (!vue || !vue.$store) return;
+      skipped = true;
+
+      var store = vue.$store;
+      var cfg   = store.state.configuration.configuration;
+      var colorOpts     = cfg.colorConfiguration.options;
+      var thicknessOpts = cfg.thicknessConfiguration.options;
+
+      // Sélection initiale : brut + 15/10
+      var defaultColor     = colorOpts.find(function (o) { return o.code === 'brut'; })     || colorOpts[0];
+      var defaultThickness = thicknessOpts.find(function (o) { return o.code === '15_10'; }) || thicknessOpts[0];
+
+      store.commit('configuration/setColorSelectedOption',     defaultColor);
+      store.commit('configuration/setThicknessSelectedOption', defaultThickness);
+      store.dispatch('step/setStep', 'drawingBoard');
+
+      // Brancher les selects de la navbar sur le store
+      bindNavSelects(store, colorOpts, thicknessOpts);
+
+      hideOverlay();
+    }
+
+    // Connecte les <select> de la navbar au store Vuex
+    function bindNavSelects(store, colorOpts, thicknessOpts) {
+      var navColor = document.getElementById('nav-color');
+      var navThick = document.getElementById('nav-thickness');
+      if (!navColor || !navThick) return;
+
+      navColor.addEventListener('change', function () {
+        var opt = colorOpts.find(function (o) { return o.code === navColor.value; });
+        if (opt) store.commit('configuration/setColorSelectedOption', opt);
+      });
+
+      navThick.addEventListener('change', function () {
+        var opt = thicknessOpts.find(function (o) { return o.code === navThick.value; });
+        if (opt) store.commit('configuration/setThicknessSelectedOption', opt);
+      });
+    }
+
+    // Observer : dès que Vue peuple #product-configurator, tenter le skip
     var observer = new MutationObserver(function () {
       if (target.children.length > 0) {
-        overlay.style.transition = 'opacity 0.3s';
-        overlay.style.opacity = '0';
-        setTimeout(function () { overlay.remove(); }, 350);
         observer.disconnect();
+        // Laisser Vue finir le premier render tick avant d'accéder au store
+        setTimeout(skipToDrawingBoard, 80);
       }
     });
     observer.observe(target, { childList: true, subtree: false });
-    // Fallback : masquer après 10s
-    setTimeout(function () { overlay && overlay.remove(); }, 10000);
+
+    // Fallback : si MutationObserver manque le premier render
+    setTimeout(function () { skipToDrawingBoard(); hideOverlay(); }, 5000);
   })();
   </script>
 
