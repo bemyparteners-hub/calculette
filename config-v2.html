@@ -154,22 +154,30 @@
     <!-- Sélecteurs matière / épaisseur dans la barre (actionnent le store Vuex) -->
     <div class="mat-pill">
       <select id="nav-color" title="Couleur / finition">
-        <option value="brut">Brut</option>
-        <option value="ral9010">RAL 9010 — Blanc</option>
-        <option value="ral9006">RAL 9006 — Alu blanc</option>
-        <option value="ral7016">RAL 7016 — Anthracite</option>
-        <option value="ral7015">RAL 7015 — Gris ardoise</option>
-        <option value="ral8019">RAL 8019 — Brun gris</option>
-        <option value="ral3009">RAL 3009 — Rouge oxyde</option>
-        <option value="ral6009">RAL 6009 — Vert sapin</option>
+        <option value="ALUMINIUM">Aluminium brut</option>
+        <option value="RAL1013" selected>RAL 1013 — Blanc perlé</option>
+        <option value="RAL9010">RAL 9010 — Blanc pur</option>
+        <option value="RAL9002">RAL 9002 — Blanc gris</option>
+        <option value="RAL9006">RAL 9006 — Alu blanc</option>
+        <option value="RAL7016">RAL 7016 — Anthracite</option>
+        <option value="RAL7015">RAL 7015 — Gris ardoise</option>
+        <option value="RAL7021">RAL 7021 — Gris noir</option>
+        <option value="RAL7035">RAL 7035 — Gris clair</option>
+        <option value="RAL8019">RAL 8019 — Brun gris</option>
+        <option value="RAL8017">RAL 8017 — Brun chocolat</option>
+        <option value="RAL3009">RAL 3009 — Rouge oxyde</option>
+        <option value="RAL6009">RAL 6009 — Vert sapin</option>
+        <option value="RAL6005">RAL 6005 — Vert mousse</option>
+        <option value="RAL5010">RAL 5010 — Bleu gentiane</option>
+        <option value="RAL9005">RAL 9005 — Noir foncé</option>
+        <option value="ALUANODISE">Aluminium anodisé</option>
+        <option value="CORTEN">Acier Corten</option>
       </select>
       <span class="sep">|</span>
       <select id="nav-thickness" title="Épaisseur">
-        <option value="10_10">10/10</option>
-        <option value="15_10" selected>15/10</option>
-        <option value="20_10">20/10</option>
-        <option value="25_10">25/10</option>
-        <option value="30_10">30/10</option>
+        <option value="08">8/10 (0,8 mm)</option>
+        <option value="1">10/10 (1,0 mm)</option>
+        <option value="15" selected>15/10 (1,5 mm)</option>
       </select>
     </div>
 
@@ -314,88 +322,103 @@
 
     colorConfiguration: {
       options: [
-        { code: 'brut',    name: 'Aluminium brut',   ralColor: null,       colorType: 'RAW_FINISH',        image: makeSwatch('%23c8cdd1') },
-        { code: 'ral9010', name: 'Blanc pur',         ralColor: 'RAL 9010', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23f4f0e6') },
-        { code: 'ral9006', name: 'Aluminium blanc',   ralColor: 'RAL 9006', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23a8aaac') },
-        { code: 'ral7016', name: 'Gris anthracite',   ralColor: 'RAL 7016', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23383e42') },
-        { code: 'ral7015', name: 'Gris ardoise',      ralColor: 'RAL 7015', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23515560') },
-        { code: 'ral8019', name: 'Brun gris',         ralColor: 'RAL 8019', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23463f3a') },
-        { code: 'ral3009', name: 'Rouge oxyde',       ralColor: 'RAL 3009', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%23723332') },
-        { code: 'ral6009', name: 'Vert sapin',        ralColor: 'RAL 6009', colorType: 'PRE_PAINTED_COLOR', image: makeSwatch('%2331392b') },
+        { code: 'ALUMINIUM',  name: 'Aluminium brut',    ralColor: null,         colorType: 'RAW_FINISH',          image: makeSwatch('%23c8cdd1') },
+        { code: 'RAL1013',    name: 'Blanc perlé',       ralColor: 'RAL 1013',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23e9e5ce') },
+        { code: 'RAL9010',    name: 'Blanc pur',         ralColor: 'RAL 9010',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23f4f0e8') },
+        { code: 'RAL9002',    name: 'Blanc gris',        ralColor: 'RAL 9002',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23e7e3da') },
+        { code: 'RAL9006',    name: 'Aluminium blanc',   ralColor: 'RAL 9006',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23a8aaac') },
+        { code: 'RAL7016',    name: 'Gris anthracite',   ralColor: 'RAL 7016',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23373f43') },
+        { code: 'RAL7015',    name: 'Gris ardoise',      ralColor: 'RAL 7015',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23515560') },
+        { code: 'RAL7021',    name: 'Gris noir',         ralColor: 'RAL 7021',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%232f3234') },
+        { code: 'RAL7035',    name: 'Gris clair',        ralColor: 'RAL 7035',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%23cdd1cc') },
+        { code: 'RAL8019',    name: 'Brun gris',         ralColor: 'RAL 8019',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%233d3332') },
+        { code: 'RAL8017',    name: 'Brun chocolat',     ralColor: 'RAL 8017',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%2344322d') },
+        { code: 'RAL3009',    name: 'Rouge oxyde',       ralColor: 'RAL 3009',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%236e3b3b') },
+        { code: 'RAL6009',    name: 'Vert sapin',        ralColor: 'RAL 6009',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%232d3a2e') },
+        { code: 'RAL6005',    name: 'Vert mousse',       ralColor: 'RAL 6005',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%232d4a29') },
+        { code: 'RAL5010',    name: 'Bleu gentiane',     ralColor: 'RAL 5010',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%230e4f9f') },
+        { code: 'RAL9005',    name: 'Noir foncé',        ralColor: 'RAL 9005',   colorType: 'PRELAQUE_STANDARD',   image: makeSwatch('%230a0a0a') },
+        { code: 'ALUANODISE', name: 'Aluminium anodisé', ralColor: null,         colorType: 'RAW_FINISH',          image: makeSwatch('%23b0b8c0') },
+        { code: 'CORTEN',     name: 'Acier Corten',      ralColor: null,         colorType: 'PRELAQUE_SPECIFIQUE', image: makeSwatch('%238b5e3c') },
       ]
     },
 
     thicknessConfiguration: {
       options: [
-        { code: '10_10', name: '10/10  (1,0 mm)' },
-        { code: '15_10', name: '15/10  (1,5 mm)' },
-        { code: '20_10', name: '20/10  (2,0 mm)' },
-        { code: '25_10', name: '25/10  (2,5 mm)' },
-        { code: '30_10', name: '30/10  (3,0 mm)' },
+        { code: '08', name: '8/10  (0,8 mm)' },
+        { code: '1',  name: '10/10 (1,0 mm)' },
+        { code: '15', name: '15/10 (1,5 mm)' },
       ]
     },
 
     availableVariants: (function () {
-      var colors     = ['brut','ral9010','ral9006','ral7016','ral7015','ral8019','ral3009','ral6009'];
-      var thicknesses= ['10_10','15_10','20_10','25_10','30_10'];
-      var pricingBase= { brut:'brut', ral9010:'laque', ral9006:'laque', ral7016:'laque', ral7015:'laque', ral8019:'laque', ral3009:'laque', ral6009:'laque' };
+      var stdColors = ['RAL1013','RAL9010','RAL9002','RAL9006','RAL7016','RAL7015','RAL7021','RAL7035','RAL8019','RAL8017','RAL3009','RAL6009','RAL6005','RAL5010','RAL9005'];
+      var thicknesses = ['08', '1', '15'];
+      var taxRate = { rate: 20, isIncludedInPrice: true };
       var variants = [];
-      colors.forEach(function (c) {
+
+      // Aluminium brut : toutes épaisseurs
+      thicknesses.forEach(function (th) {
+        variants.push({
+          gridPricingCode: 'brut_' + th,
+          taxRate: taxRate,
+          optionValues: [{ optionCode: 'RAL_COLOR', code: 'ALUMINIUM' }, { optionCode: 'THICKNESS', code: th }],
+          enabled: true
+        });
+      });
+
+      // Prélaqué standard : toutes épaisseurs
+      stdColors.forEach(function (color) {
         thicknesses.forEach(function (th) {
           variants.push({
-            gridPricingCode: pricingBase[c] + '_' + th,
-            taxRate: { rate: 0.20, isIncludedInPrice: false },
-            optionValues: [
-              { optionCode: 'RAL_COLOR', code: c },
-              { optionCode: 'THICKNESS', code: th }
-            ],
+            gridPricingCode: 'laque_' + th,
+            taxRate: taxRate,
+            optionValues: [{ optionCode: 'RAL_COLOR', code: color }, { optionCode: 'THICKNESS', code: th }],
             enabled: true
           });
         });
       });
+
+      // Aluminium anodisé : 1,0 mm uniquement
+      variants.push({
+        gridPricingCode: 'anodise',
+        taxRate: taxRate,
+        optionValues: [{ optionCode: 'RAL_COLOR', code: 'ALUANODISE' }, { optionCode: 'THICKNESS', code: '1' }],
+        enabled: true
+      });
+
+      // Corten : 1,5 mm uniquement
+      variants.push({
+        gridPricingCode: 'laque_15',
+        taxRate: taxRate,
+        optionValues: [{ optionCode: 'RAL_COLOR', code: 'CORTEN' }, { optionCode: 'THICKNESS', code: '15' }],
+        enabled: true
+      });
+
       return variants;
     })(),
 
     configuratorConfiguration: {
       maxCrushedLength : 30,
-      maxExpendedLength: 3000,
-      maxFoldsCount    : 6,
-      maxShapeLength   : 2500,
+      maxExpendedLength: 1500,
+      maxFolds         : 7,
+      maxShapeLength   : 1250,
       minCrushedLength : 5,
       minSegmentLength : 15,
-      minFoldAngle     : 15,
+      minFoldAngle     : 45,
       minShapeLength   : 50
     },
 
-    // Tarifs HT €/ml — par code pricing
-    gridPricings: (function () {
-      var p = {};
-      var thicknesses = ['10_10','15_10','20_10','25_10','30_10'];
-      // Prix base brut (€/m) selon épaisseur
-      var brutBase = { '10_10':6.5, '15_10':9.0, '20_10':12.0, '25_10':15.5, '30_10':19.0 };
-      // Supplément laquage (€/m)
-      var laqueSup = { '10_10':5.0, '15_10':5.5, '20_10':6.0, '25_10':7.0, '30_10':8.0 };
-
-      // Tranches de longueur développée (mm) → dégressif
-      var tranches = [250, 500, 1000, 1500, 2000, 2500, 3000];
-
-      thicknesses.forEach(function (th) {
-        var base = brutBase[th];
-        var sup  = laqueSup[th];
-
-        p['brut_' + th] = tranches.map(function (maxL, i) {
-          var factor = 1 - i * 0.03; // dégressif 3%/tranche
-          return { maxLength: maxL, price: +(base * factor).toFixed(2) };
-        });
-
-        p['laque_' + th] = tranches.map(function (maxL, i) {
-          var factor = 1 - i * 0.025;
-          return { maxLength: maxL, price: +((base + sup) * factor).toFixed(2) };
-        });
-      });
-
-      return p;
-    })()
+    // Tarifs TTC en centimes / mètre linéaire développé, par tranche de longueur
+    gridPricings: {
+      'brut_08':  [{maxLength:250,price:650},{maxLength:500,price:620},{maxLength:750,price:590},{maxLength:1000,price:570},{maxLength:1250,price:550},{maxLength:1500,price:530}],
+      'brut_1':   [{maxLength:250,price:800},{maxLength:500,price:760},{maxLength:750,price:730},{maxLength:1000,price:700},{maxLength:1250,price:675},{maxLength:1500,price:650}],
+      'brut_15':  [{maxLength:250,price:1000},{maxLength:500,price:950},{maxLength:750,price:910},{maxLength:1000,price:870},{maxLength:1250,price:840},{maxLength:1500,price:810}],
+      'laque_08': [{maxLength:250,price:1150},{maxLength:500,price:1100},{maxLength:750,price:1060},{maxLength:1000,price:1020},{maxLength:1250,price:990},{maxLength:1500,price:960}],
+      'laque_1':  [{maxLength:250,price:1300},{maxLength:500,price:1250},{maxLength:750,price:1200},{maxLength:1000,price:1160},{maxLength:1250,price:1130},{maxLength:1500,price:1100}],
+      'laque_15': [{maxLength:250,price:1550},{maxLength:500,price:1490},{maxLength:750,price:1440},{maxLength:1000,price:1390},{maxLength:1250,price:1350},{maxLength:1500,price:1310}],
+      'anodise':  [{maxLength:250,price:1800},{maxLength:500,price:1730},{maxLength:750,price:1670},{maxLength:1000,price:1620},{maxLength:1250,price:1580},{maxLength:1500,price:1540}]
+    }
   });
 
   // ══════════════════════════════════════════════════════
@@ -425,9 +448,9 @@
       var colorOpts     = cfg.colorConfiguration.options;
       var thicknessOpts = cfg.thicknessConfiguration.options;
 
-      // Sélection initiale : brut + 15/10
-      var defaultColor     = colorOpts.find(function (o) { return o.code === 'brut'; })     || colorOpts[0];
-      var defaultThickness = thicknessOpts.find(function (o) { return o.code === '15_10'; }) || thicknessOpts[0];
+      // Sélection initiale : RAL1013 + 15/10
+      var defaultColor     = colorOpts.find(function (o) { return o.code === 'RAL1013'; }) || colorOpts[0];
+      var defaultThickness = thicknessOpts.find(function (o) { return o.code === '15'; })  || thicknessOpts[0];
 
       store.commit('configuration/setColorSelectedOption',     defaultColor);
       store.commit('configuration/setThicknessSelectedOption', defaultThickness);
@@ -471,8 +494,169 @@
   })();
   </script>
 
+  <!-- jQuery + Bootstrap 4 JS (requis pour les modaux data-toggle="modal") -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
   <!-- Configurateur Easypliage (Vue 2 + Vuex + BootstrapVue bundlé) -->
   <script src="easytest.js"></script>
+
+  <!-- ══════════════════════════════════════════════════════
+       Modaux Bootstrap référencés par le configurateur
+       ══════════════════════════════════════════════════════ -->
+
+  <!-- Aide au dessin -->
+  <div class="modal fade" id="drawing-help" tabindex="-1" role="dialog" aria-labelledby="drawing-help-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="drawing-help-title">Aide — Outil de dessin</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Comment utiliser le configurateur ?</strong></p>
+          <ul>
+            <li>Cliquez sur un segment pour modifier sa longueur (en mm).</li>
+            <li>Cliquez sur un angle pour modifier sa valeur (min 45°).</li>
+            <li>Utilisez les boutons <em>Ajouter un segment</em> pour créer de nouveaux plis.</li>
+            <li>Le bouton <em>Centrer</em> recentre le dessin dans la zone de travail.</li>
+          </ul>
+          <p>Le développé maximum est de <strong>1 500 mm</strong>. La longueur minimale par segment est de <strong>15 mm</strong>.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment saisir une dimension -->
+  <div class="modal fade" id="how-to-enter-dimension-modal" tabindex="-1" role="dialog" aria-labelledby="htedm-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="htedm-title">Comment saisir une dimension ?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p>Cliquez directement sur le chiffre affiché sur le segment dans le dessin, ou utilisez le champ de saisie correspondant dans le panneau latéral.</p>
+          <p>Toutes les dimensions sont exprimées en <strong>millimètres (mm)</strong>.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment calculer la longueur -->
+  <div class="modal fade" id="how-to-calculate-the-length-modal" tabindex="-1" role="dialog" aria-labelledby="htcl-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="htcl-title">Comment calculer la longueur ?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p>La <strong>longueur développée</strong> est la somme de tous les segments du profil à plat, sans les épaisseurs de pliage.</p>
+          <p>La longueur de coupe (longueur du profilé) est la cote que vous indiquez dans le champ <em>Longueur</em> — c'est la dimension du profilé fini dans sa direction longitudinale.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Qu'est-ce que la face laquée -->
+  <div class="modal fade" id="what-is-the-pre-painted-side-modal" tabindex="-1" role="dialog" aria-labelledby="wips-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="wips-title">Qu'est-ce que la face laquée ?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p>Pour les finitions prélaquées, la peinture est appliquée sur <strong>une seule face</strong> de la tôle (face visible).</p>
+          <p>Indiquez quelle face sera visible une fois le profilé posé. Le configurateur en tient compte pour orienter correctement le pli.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formes prédéfinies -->
+  <div class="modal fade" id="predefined-shapes" tabindex="-1" role="dialog" aria-labelledby="ps-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="ps-title">Formes prédéfinies</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p>Sélectionnez une forme standard pour démarrer rapidement :</p>
+          <div class="row text-center">
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">Équerre simple</div></div>
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">Z inversé</div></div>
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">Couvertine 3 faces</div></div>
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">Bavette droite</div></div>
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">Oméga</div></div>
+            <div class="col-4 mb-3"><div style="border:2px solid #0d2933;padding:12px;border-radius:6px;cursor:pointer;">U plat</div></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation ajout panier -->
+  <div class="modal fade" id="confirmation-modal" tabindex="-1" role="dialog" aria-labelledby="cm-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cm-title">Configuration enregistrée</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p>Votre configuration a bien été ajoutée. Voulez-vous continuer à configurer ou passer au devis ?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Continuer</button>
+          <a href="devis.html" class="btn btn-primary" style="background:#0d2933;border-color:#0d2933;">Aller au devis</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment choisir l'épaisseur -->
+  <div class="modal fade" id="how-to-choose-thickness-modal" tabindex="-1" role="dialog" aria-labelledby="htct-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="htct-title">Comment choisir l'épaisseur ?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-sm table-bordered">
+            <thead><tr><th>Épaisseur</th><th>Usage recommandé</th></tr></thead>
+            <tbody>
+              <tr><td><strong>8/10 (0,8 mm)</strong></td><td>Bardage léger, protections intérieures</td></tr>
+              <tr><td><strong>10/10 (1,0 mm)</strong></td><td>Couvertines, bavettes standards</td></tr>
+              <tr><td><strong>15/10 (1,5 mm)</strong></td><td>Acrotères, profils structurels — <strong>recommandé</strong></td></tr>
+            </tbody>
+          </table>
+          <p class="text-muted small">En cas de doute, le <strong>15/10</strong> offre un bon équilibre rigidité / poids pour la plupart des applications.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
