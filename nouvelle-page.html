@@ -103,6 +103,15 @@ body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:
 /* ── Misc ── */
 select,input[type=text],input[type=number]{font-family:inherit;}
 .lbl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:2px;}
+
+/* ── Autocomplete matière ── */
+.mat-dd{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:300;max-height:180px;overflow-y:auto;display:none;}
+.mat-opt{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--line);font-size:11px;line-height:1.4;}
+.mat-opt:last-child{border-bottom:none;}
+.mat-opt:hover,.mat-opt.focused{background:var(--accent-soft);}
+.mat-opt strong{color:var(--text);}
+.mat-opt small{color:var(--muted);margin-left:5px;}
+.param-readonly{border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;background:#f8f9fa;color:var(--text);width:100%;cursor:default;}
 </style>
 </head>
 <body>
@@ -150,21 +159,25 @@ select,input[type=text],input[type=number]{font-family:inherit;}
     <div class="fieldset">
       <div class="fs-title">Paramètres</div>
       <div class="fs-body">
-        <div class="param-row">
-          <label>Matière</label>
-          <span class="param-static">Aluminium</span>
+        <div class="param-row" style="grid-column:1/-1;">
+          <label style="margin-bottom:3px;">Matière</label>
+          <div style="position:relative;">
+            <input id="matInput" type="text" placeholder="Tapez RAL, nom, épaisseur…" autocomplete="off"
+                   style="border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;width:100%;outline:none;">
+            <div id="matDropdown" class="mat-dd"></div>
+          </div>
         </div>
         <div class="param-row">
           <label>Épaisseur</label>
-          <select id="paramEpaisseur"></select>
+          <input id="paramEpaisseur" class="param-readonly" readonly placeholder="—">
         </div>
         <div class="param-row">
           <label>RAL</label>
-          <input id="paramRal" type="text" placeholder="ex: 9006" maxlength="10">
+          <input id="paramRal" class="param-readonly" readonly placeholder="—">
         </div>
         <div class="param-row">
           <label>Finition</label>
-          <select id="paramFinition"></select>
+          <input id="paramFinition" class="param-readonly" readonly placeholder="—">
         </div>
         <div class="param-row">
           <label>Quantité</label>
@@ -262,12 +275,23 @@ select,input[type=text],input[type=number]{font-family:inherit;}
 
 </div><!-- /.app -->
 
+<script src="plialu-materials.js"></script>
 <script src="plialu-data.js"></script>
 <script>
 // ── Bloc A : Init + Gammes + Articles ──
 (() => {
-let activeFamille = PLIALU_FAMILLES[0];
-let activeArticle = '';
+let activeFamille  = PLIALU_FAMILLES[0];
+let activeArticle  = '';
+let activeMaterial = null;
+
+const PLIALU_TARIFS_FAM = {
+  'Alu laqué':          22.00,
+  'Aluminium standard': 18.00,
+  'Aluminium brut':     15.00,
+  'Acier laqué':        19.00,
+  'Acier standard':     14.00,
+  'Acier brut':         11.00
+};
 
 const FAM_SVG = {
   "Bavette":                         "M4,24 H22 V8",
@@ -399,12 +423,12 @@ function mkProfile(fV,aV) {
 function update() {
   const {fN,aN,fV,aV}=readSaisies();
   const Lg   =parseFloat(document.getElementById('saisieLongueur').value)||0;
-  const ep   =parseFloat(document.getElementById('paramEpaisseur').value)||0.75;
-  const ral  =document.getElementById('paramRal').value.trim();
-  const fin  =document.getElementById('paramFinition').value;
+  const mat  =activeMaterial ? getMaterialById(activeMaterial) : null;
+  const ep   =mat ? mat.thickness : (parseFloat(document.getElementById('paramEpaisseur').value)||0.75);
+  const ral  =mat ? mat.ral  : document.getElementById('paramRal').value.trim();
+  const fin  =mat ? mat.finish : document.getElementById('paramFinition').value;
   const qte  =Math.max(1,parseInt(document.getElementById('quantite').value)||1);
-  const epObj=PLIALU_EPAISSEURS.find(e=>e.valeur==ep)||PLIALU_EPAISSEURS[2];
-  const tarif=PLIALU_TARIFS['AL'+epObj.code]||16;
+  const tarif=PLIALU_TARIFS_FAM[mat ? mat.family : null] || 18;
   const sum  =fV.reduce((s,v)=>s+v,0);
   const dvp  =Math.max(0,sum-aV.reduce((s,a)=>s+ep*(a/90)*0.4,0));
   const surf =dvp&&Lg?(dvp/1000)*(Lg/1000):0;
@@ -413,7 +437,7 @@ function update() {
   document.getElementById('resSurface').textContent    =surf?surf.toFixed(4)+' m²':'—';
   document.getElementById('resPrixUnit').textContent   =puHT?puHT.toFixed(2)+' €':'—';
   document.getElementById('resPrixTotal').textContent  =puHT?(puHT*qte).toFixed(2)+' €':'—';
-  const refMat=buildRefMatiere(ep,ral,fin);
+  const refMat=mat ? mat.name : buildRefMatiere(ep,ral,fin);
   document.getElementById('resRefMat').textContent=refMat||'—';
   const fo={}; fN.forEach((f,i)=>{if(fV[i]>0)fo[f]=fV[i];});
   const refPiece=buildRefPiece(activeFamille,fo);
@@ -486,6 +510,56 @@ function _onInput(){clearTimeout(_ut);_ut=setTimeout(update,120);}
 });
 document.getElementById('saisiesContainer').addEventListener('input',_onInput);
 document.getElementById('article').addEventListener('change',()=>setTimeout(update,80));
+
+// ── Autocomplete matière ──
+function selectMaterial(m) {
+  activeMaterial = m.id;
+  document.getElementById('matInput').value       = m.name;
+  document.getElementById('matDropdown').style.display = 'none';
+  document.getElementById('paramEpaisseur').value = m.thickness + ' mm';
+  document.getElementById('paramRal').value       = m.ral  || '—';
+  document.getElementById('paramFinition').value  = m.finish || '—';
+  update();
+}
+
+function setupMatAutocomplete() {
+  const inp = document.getElementById('matInput');
+  const dd  = document.getElementById('matDropdown');
+  let focusIdx = -1;
+
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim();
+    focusIdx = -1;
+    if (q.length < 2) { dd.style.display = 'none'; return; }
+    const res = searchMaterials(q, 15);
+    if (!res.length) { dd.style.display = 'none'; return; }
+    dd.innerHTML = res.map((m, i) =>
+      `<div class="mat-opt" data-idx="${i}"><strong>${m.name}</strong><small>${m.family} — ${m.thickness} mm</small></div>`
+    ).join('');
+    dd._res = res;
+    dd.style.display = 'block';
+    dd.querySelectorAll('.mat-opt').forEach(el =>
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectMaterial(dd._res[+el.dataset.idx]);
+      })
+    );
+  });
+
+  inp.addEventListener('keydown', e => {
+    const opts = dd.querySelectorAll('.mat-opt');
+    if (!opts.length) return;
+    if (e.key === 'ArrowDown') { focusIdx = Math.min(focusIdx+1, opts.length-1); }
+    else if (e.key === 'ArrowUp') { focusIdx = Math.max(focusIdx-1, 0); }
+    else if (e.key === 'Enter' && focusIdx >= 0) { e.preventDefault(); selectMaterial(dd._res[focusIdx]); return; }
+    else if (e.key === 'Escape') { dd.style.display='none'; return; }
+    opts.forEach((o,i) => o.classList.toggle('focused', i === focusIdx));
+  });
+
+  inp.addEventListener('blur', () => setTimeout(() => { dd.style.display = 'none'; }, 160));
+}
+
+setupMatAutocomplete();
 
 // ── Bloc B2 (devis + PDF) à venir ──
 })();
