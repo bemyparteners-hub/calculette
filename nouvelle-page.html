@@ -463,7 +463,7 @@ function renderCoupe(fN, fV, aV, thickness) {
   const flipped = pts.map(p => ({x: p.x, y: -p.y}));
   const bb      = AluGeom.bbox(flipped);
 
-  const pad = 55;
+  const pad = Math.max(60, bb.w * 0.15, bb.h * 0.15);
   const vbX = bb.minX - pad, vbY = bb.minY - pad;
   const vbW = (bb.w || 40) + pad * 2, vbH = (bb.h || 40) + pad * 2;
 
@@ -559,25 +559,27 @@ function render3D(fN,fV,aV,Lg) {
   if(!sum||!Lg){svg.style.display='none';ph.style.display='';return;}
   svg.style.display='';ph.style.display='none';
   const pts=mkProfile(fV,aV);
-  const LV=Math.min(Lg,sum*2.5),c30=Math.cos(Math.PI/6);
-  const iso=(px,py,z)=>({x:(px-z)*c30,y:py+(px+z)*.5});
-  const rw=[];pts.forEach(p=>{rw.push(iso(p.x,p.y,0));rw.push(iso(p.x,p.y,LV));});
+  const c30=Math.cos(Math.PI/6);
+  // Extrusion vers la droite-bas : z contribue positivement à x et y
+  const iso=(px,py,z)=>({x: px + z*c30, y: -py + z*0.5});
+  const rw=[];
+  pts.forEach(p=>{rw.push(iso(p.x,p.y,0));rw.push(iso(p.x,p.y,Lg));});
   const xs=rw.map(p=>p.x),ys=rw.map(p=>p.y);
   const bx=Math.min(...xs),bX=Math.max(...xs),by=Math.min(...ys),bY=Math.max(...ys);
-  const W=400,H=280,PAD=36,sc=Math.min((W-PAD*2)/((bX-bx)||1),(H-PAD*2)/((bY-by)||1));
+  const W=400,H=280,PAD=40,sc=Math.min((W-PAD*2)/((bX-bx)||1),(H-PAD*2)/((bY-by)||1));
   const ox=W/2-(bx+(bX-bx)/2)*sc,oy=H/2-(by+(bY-by)/2)*sc;
   const S=(px,py,z=0)=>{const p=iso(px,py,z);return{x:p.x*sc+ox,y:p.y*sc+oy};};
   const CL=['rgba(147,197,253,.5)','rgba(167,243,208,.5)','rgba(253,230,138,.5)','rgba(248,180,180,.5)','rgba(196,181,253,.5)'];
   let out='';
   fV.forEach((len,i)=>{
     if(!len)return;
-    const a=S(pts[i].x,pts[i].y,0),b=S(pts[i+1].x,pts[i+1].y,0),c=S(pts[i+1].x,pts[i+1].y,LV),d=S(pts[i].x,pts[i].y,LV);
+    const a=S(pts[i].x,pts[i].y,0),b=S(pts[i+1].x,pts[i+1].y,0),c=S(pts[i+1].x,pts[i+1].y,Lg),d=S(pts[i].x,pts[i].y,Lg);
     out+=`<polygon points="${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}" fill="${CL[i%5]}" stroke="#374151" stroke-width="1.2"/>`;
     out+=`<text x="${(a.x+b.x)/2}" y="${(a.y+b.y)/2}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#c026d3" font-weight="bold">${fN[i]}</text>`;
   });
-  const bk=pts.map((p,i)=>{const s=S(p.x,p.y,LV);return(i?'L':'M')+s.x+','+s.y;}).join('');
+  const bk=pts.map((p,i)=>{const s=S(p.x,p.y,Lg);return(i?'L':'M')+s.x+','+s.y;}).join('');
   const fr=pts.map((p,i)=>{const s=S(p.x,p.y,0);return(i?'L':'M')+s.x+','+s.y;}).join('');
-  const p0=S(pts[0].x,pts[0].y,0),p1=S(pts[0].x,pts[0].y,LV);
+  const p0=S(pts[0].x,pts[0].y,0),p1=S(pts[0].x,pts[0].y,Lg);
   out+=`<path d="${bk}" fill="none" stroke="#9ca3af" stroke-width="1"/>`;
   out+=`<path d="${fr}" fill="none" stroke="#111" stroke-width="2"/>`;
   out+=`<text x="${(p0.x+p1.x)/2}" y="${Math.min(p0.y,p1.y)-4}" text-anchor="middle" font-size="9" fill="#3b82f6">Lg ${Lg}mm</text>`;
