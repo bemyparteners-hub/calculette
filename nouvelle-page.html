@@ -3,680 +3,268 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PLIALU — Studio</title>
+<title>PLIALU — Configurateur</title>
 <style>
-/* RESET */
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
-body{font:13px/1.4 'Segoe UI',system-ui,sans-serif;background:#e4e8ec;color:#2a2a2a}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6f8;--panel:#ffffff;--line:#e3e6ea;--line-strong:#d0d4da;
+  --text:#2b2f36;--muted:#6b7280;--accent:#3b82f6;--accent-soft:#eff6ff;
+  --danger:#e11d48;--fold:#c026d3;--radius:6px;--radius-lg:10px;
+}
+body{background:var(--bg);font-family:system-ui,sans-serif;font-size:13px;color:var(--text);padding:12px;min-height:100vh;}
+.app{min-height:calc(100vh - 24px);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;}
 
-/* TOPBAR */
-.topbar{height:44px;background:#1a3a5a;display:flex;align-items:center;padding:0 14px;gap:12px;flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,.3);z-index:10;position:relative}
-.logo{font-weight:900;font-size:16px;letter-spacing:2px;color:#cbff00;white-space:nowrap;flex-shrink:0}
-.topbar-sep{width:1px;height:26px;background:rgba(255,255,255,.18);flex-shrink:0}
-.tb-field{display:flex;align-items:center;gap:5px}
-.tb-field label{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
-.tb-field input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:3px;color:#fff;font:12px 'Segoe UI',sans-serif;padding:4px 8px;width:150px}
-.tb-field input:focus{outline:none;background:rgba(255,255,255,.18)}
-.tb-field input::placeholder{color:rgba(255,255,255,.25)}
-.topbar-right{margin-left:auto}
-.btn-gen-pdf{background:#cbff00;color:#1a3a0a;border:none;border-radius:3px;padding:6px 13px;font:700 11px 'Segoe UI',sans-serif;cursor:pointer;white-space:nowrap}
-.btn-gen-pdf:hover{background:#b0e000}
+/* ── Titlebar ── */
+.titlebar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);background:#1a1f2e;flex-wrap:wrap;}
+.logo{font-size:15px;font-weight:800;letter-spacing:.5px;color:#cbff00;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.logo::before{content:'●';color:#cbff00;font-size:11px;}
+.tb-sep{width:1px;height:22px;background:rgba(255,255,255,.15);margin:0 4px;}
+.tb-field{display:flex;align-items:center;gap:6px;}
+.tb-field label{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap;font-weight:500;}
+.tb-field input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:var(--radius);color:#fff;padding:4px 8px;font-size:12px;width:160px;outline:none;}
+.tb-field input::placeholder{color:rgba(255,255,255,.3);}
+.tb-field input:focus{border-color:#cbff00;background:rgba(203,255,0,.06);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.btn-pdf{background:#cbff00;color:#1a1f2e;border:none;border-radius:var(--radius);padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;}
+.btn-pdf:hover{background:#d8ff33;}
 
-/* WORKSPACE : left (1fr) + devis panel (286px) */
-.workspace{display:grid;grid-template-columns:1fr 286px;height:calc(100vh - 44px);overflow:hidden}
-.work-left{display:flex;flex-direction:column;overflow:hidden}
+/* ── Main grid ── */
+.main{padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-content:start;}
+.fieldset{border:1px solid var(--line);border-radius:var(--radius);background:#fff;display:flex;flex-direction:column;overflow:hidden;}
+.fs-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:9px 12px 7px;border-bottom:1px solid var(--line);background:#fafbfc;flex-shrink:0;}
+.fs-body{padding:10px 12px;display:flex;flex-direction:column;gap:7px;flex:1;}
 
-/* TOP PANELS : 3 colonnes empilées */
-.top-panels{display:grid;grid-template-columns:175px 1fr 210px;flex-shrink:0;height:40vh;min-height:190px;max-height:310px;border-bottom:2px solid #b4bbc4}
+/* ── Gammes grid ── */
+.gammes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.gamme-thumb{border:1px solid var(--line);border-radius:4px;padding:5px 4px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fafbfc;transition:border-color .15s,background .15s;}
+.gamme-thumb:hover{border-color:var(--accent);background:var(--accent-soft);}
+.gamme-thumb.active{border-color:var(--accent);background:var(--accent-soft);}
+.gamme-thumb svg{width:36px;height:28px;}
+.gamme-thumb span{font-size:9px;color:var(--muted);text-align:center;line-height:1.1;word-break:break-word;}
 
-/* FIELDSET / LEGEND générique */
-fieldset{border:none;border-right:1px solid #c8cdd4;background:#f5f6f8;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-fieldset:last-child{border-right:none}
-legend{display:block;width:100%;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#5c6875;background:#e4e8ee;padding:4px 10px;border-bottom:1px solid #c8cdd4;flex-shrink:0}
+/* ── Article select ── */
+.article-preview{border:1px solid var(--line);border-radius:4px;background:#fafbfc;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.article-preview svg{max-width:100%;max-height:100%;}
 
-/* ZONE SCROLL INTERNE */
-.fs-body{overflow-y:auto;flex:1;min-height:0;padding:6px 8px}
-.fs-body::-webkit-scrollbar{width:4px}
-.fs-body::-webkit-scrollbar-thumb{background:#bfc8d0;border-radius:2px}
+/* ── Paramètres ── */
+.param-row{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;align-items:center;}
+.param-row label{font-size:11px;color:var(--muted);white-space:nowrap;}
+.param-row input,.param-row select{border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;background:#fff;color:var(--text);outline:none;width:100%;}
+.param-row input:focus,.param-row select:focus{border-color:var(--accent);}
+.param-static{font-size:12px;font-weight:600;color:var(--text);}
 
-/* SEARCH */
-.search-input{display:block;width:100%;border:1px solid #bfc8d0;border-radius:2px;font:11px 'Segoe UI',sans-serif;padding:5px 7px;background:#fff;color:#2a2a2a;margin-bottom:5px}
-.search-input:focus{outline:none;border-color:#2d7dd2}
+/* ── Row bottom ── */
+.row-bottom{grid-column:1/-1;display:grid;grid-template-columns:260px 1fr 1fr;gap:10px;}
+.panel-full{border:1px solid var(--line);border-radius:var(--radius);background:#fff;display:flex;flex-direction:column;min-height:440px;overflow:hidden;}
 
-/* FAMILLE BUTTONS */
-.famille-list{display:flex;flex-direction:column;gap:1px}
-.famille-btn{display:flex;align-items:center;gap:6px;padding:4px 5px;border:1px solid transparent;border-radius:2px;cursor:pointer;background:transparent;color:#555;font:700 11px 'Segoe UI',sans-serif;text-align:left;width:100%}
-.famille-btn:hover{background:#e8f0f8;border-color:#b8d0e8;color:#2d7dd2}
-.famille-btn.active{background:#d6e8ff;border-color:#2d7dd2;color:#1a5a9a}
-.famille-btn:not(.active) .fam-thumb svg{stroke:rgba(100,115,130,.65)}
-.famille-btn.active .fam-thumb svg{stroke:#2d7dd2}
-.fam-thumb{flex-shrink:0;width:32px;height:22px;display:flex;align-items:center;justify-content:center}
-.fam-thumb svg{overflow:visible}
-.fam-lbl strong{display:block;font-size:11px;line-height:1.2}
-.fam-lbl span{font-size:9px;color:#999}
+/* ── Devis panel ── */
+.devis-lignes{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:4px;}
+.ligne-item{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:#fafbfc;font-size:11px;}
+.ligne-item .li-thumb{width:36px;height:28px;flex-shrink:0;border:1px solid var(--line);border-radius:3px;background:#f0f1f4;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.ligne-item .li-info{flex:1;min-width:0;}
+.ligne-item .li-ref{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ligne-item .li-sub{color:var(--muted);}
+.ligne-item .li-pu{text-align:right;font-weight:700;white-space:nowrap;color:var(--text);}
+.ligne-item .li-del{color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:1px 2px;flex-shrink:0;}
+.devis-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-style:italic;}
+.devis-totaux{border-top:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:3px;}
+.t-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);}
+.t-row span:last-child{font-weight:600;color:var(--text);}
+.t-ttc-row{display:flex;justify-content:space-between;align-items:center;background:#1a1f2e;color:#fff;border-radius:4px;padding:6px 10px;margin-top:4px;font-size:13px;font-weight:700;}
+.t-ttc-row span:last-child{color:#cbff00;font-size:15px;}
+.devis-actions{padding:8px 10px;border-top:1px solid var(--line);display:flex;gap:6px;}
+.btn-gen-pdf{flex:1;background:#cbff00;color:#1a1f2e;border:none;border-radius:var(--radius);padding:6px;font-size:11px;font-weight:700;cursor:pointer;}
+.btn-gen-pdf:hover{background:#d8ff33;}
+.btn-vider{background:#fef2f2;color:var(--danger);border:1px solid #fecaca;border-radius:var(--radius);padding:6px 10px;font-size:11px;cursor:pointer;}
+.btn-vider:hover{background:#fee2e2;}
 
-/* ARTICLES PILLS */
-.articles-pills{display:flex;flex-wrap:wrap;gap:3px}
-.article-pill{padding:3px 9px;border:1px solid #bfc8d4;border-radius:11px;cursor:pointer;font:700 11px 'Segoe UI',sans-serif;background:#fff;color:#444}
-.article-pill:hover{border-color:#2d7dd2;color:#2d7dd2;background:#edf4ff}
-.article-pill.active{background:#2d7dd2;border-color:#2d7dd2;color:#fff}
+/* ── Render areas ── */
+.render-area{flex:1;border:1px solid var(--line);border-radius:4px;background:#fafbfc;position:relative;overflow:hidden;min-height:200px;}
+.render-area svg{width:100%;height:100%;}
+.render-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-style:italic;}
 
-/* ISO CANVAS */
-.iso-wrap{flex:1;background:#edf0f4;border-top:1px solid #c8cdd4;overflow:hidden;position:relative;min-height:70px}
-#isoCanvas{display:block;width:100%;height:100%}
-.iso-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c0c8d0;font:600 11px 'Segoe UI',sans-serif;text-align:center;pointer-events:none;padding:12px}
+/* ── Saisies ── */
+.saisie-row{display:flex;align-items:center;gap:6px;}
+.saisie-row label{font-size:11px;color:var(--muted);width:55px;flex-shrink:0;}
+.saisie-row input{flex:1;border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;outline:none;}
+.saisie-row input:focus{border-color:var(--accent);}
+.saisie-row.dim-angle label{color:var(--fold);}
+.saisie-row.dim-angle input{border-color:#e9d5ff;}
+.saisie-row.dim-off{opacity:.3;pointer-events:none;}
 
-/* LABELS / INPUTS / SELECTS */
-label{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#607080;margin-bottom:2px}
-input,select{width:100%;padding:4px 6px;border:1px solid #b8c0cc;border-radius:2px;font:12px 'Segoe UI',sans-serif;background:#fff;color:#2a2a2a}
-input:focus,select:focus{outline:none;border-color:#2d7dd2;box-shadow:0 0 0 2px rgba(45,125,210,.14)}
-input[type=number]::-webkit-inner-spin-button{opacity:.7}
-.dim-off label{color:#c0cad2}
-.dim-off input{background:#f0f2f4;color:#bcc4cc;border-style:dashed;cursor:not-allowed}
+/* ── Footer ── */
+.footer{border-top:1px solid var(--line);padding:8px 14px;display:flex;align-items:center;gap:10px;background:#fafbfc;}
+.footer input{flex:1;border:1px solid var(--line);border-radius:var(--radius);padding:5px 10px;font-size:12px;color:var(--text);outline:none;}
+.footer input:focus{border-color:var(--accent);}
+.footer .ref-mat{font-size:11px;color:var(--muted);white-space:nowrap;}
+.btn-add-devis{background:#cbff00;color:#1a1f2e;border:none;border-radius:var(--radius);padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-add-devis:hover{background:#d8ff33;}
 
-/* SAISIES (fieldset sous top-panels) */
-.panel-saisies{border-bottom:1px solid #b4bbc4;flex-shrink:0}
-.saisies-body{padding:7px 10px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:35vh}
-.saisies-top{display:grid;grid-template-columns:1fr 100px;gap:6px}
-.faces-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-.angles-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.params-row1{display:grid;grid-template-columns:1fr 1fr 60px 1fr;gap:5px}
-.params-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
-.saisies-section-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#8898a8;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #dde2e8}
-
-/* RÉSULTATS (fieldset tout en bas) */
-.panel-results{flex-shrink:0;background:#f5f6f8;border-top:1px solid #b4bbc4}
-.results-body{padding:7px 10px;display:flex;flex-direction:column;gap:6px}
-.chips-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.chip{border:1px solid #c8d0da;border-radius:2px;padding:5px;text-align:center;background:#fff}
-.chip.accent{background:#fffbe8;border-color:#e0b800}
-.chip-lbl{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#8898a8;margin-bottom:2px}
-.chip-val{font-size:13px;font-weight:800;color:#2a2a2a}
-.chip.accent .chip-val{color:#9a6400;font-size:15px}
-.desig-row{display:flex;gap:5px}
-.desig-input{flex:1;font-size:11px}
-.ref-input{width:100px;text-align:center;font-weight:800;color:#2d7dd2;font-size:11px}
-.actions-bar{display:flex;align-items:center;gap:8px}
-.btn-add{background:#2d7dd2;color:#fff;border:none;border-radius:3px;padding:7px 15px;font:700 12px 'Segoe UI',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.btn-add:hover{background:#1b68bc}
-.msg-ok{display:none;background:#e8f8e8;color:#2a7a1a;border:1px solid #8ec88e;border-radius:3px;padding:5px 9px;font:700 11px 'Segoe UI',sans-serif}
-
-/* DEVIS PANEL (colonne droite) */
-.col-devis{background:#f5f6f8;border-left:2px solid #b4bbc4;display:flex;flex-direction:column;overflow:hidden}
-.devis-hd{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:#e4e8ee;border-bottom:1px solid #c8cdd4;flex-shrink:0}
-.devis-hd-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#5c6875}
-.devis-count{font-size:10px;font-weight:700;color:#2d7dd2;background:#d6e8ff;padding:1px 7px;border-radius:9px;border:1px solid #a8c8f0}
-.devis-lignes{flex:1;overflow-y:auto;min-height:0;padding:6px 8px}
-.devis-lignes::-webkit-scrollbar{width:4px}
-.devis-lignes::-webkit-scrollbar-thumb{background:#bfc8d0;border-radius:2px}
-.devis-empty{color:#b8c0c8;font:600 11px 'Segoe UI',sans-serif;text-align:center;padding:28px 0}
-.ligne-item{display:flex;gap:6px;align-items:center;padding:5px 6px;border:1px solid #c8d0da;border-radius:2px;margin-bottom:3px;background:#fff}
-.ligne-thumb{width:40px;height:26px;object-fit:contain;border-radius:2px;border:1px solid #c8d0da;background:#edf0f4;flex-shrink:0}
-.ligne-thumb-empty{width:40px;height:26px;border:1px dashed #c8d0da;border-radius:2px;background:#f0f2f5;flex-shrink:0}
-.ligne-info{flex:1;min-width:0}
-.ligne-desig{font:700 11px 'Segoe UI',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#2a2a2a}
-.ligne-ref{font-size:9px;color:#8898a8;margin-top:1px}
-.ligne-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
-.ligne-total{font:800 11px 'Segoe UI',sans-serif;color:#2a7a1a}
-.ligne-qte-wrap{display:flex;align-items:center;gap:3px}
-.ligne-qte{width:28px;padding:2px;text-align:center;font:700 10px 'Segoe UI',sans-serif;border:1px solid #c8d0da;border-radius:2px;background:#fff}
-.qte-lbl{font-size:9px;color:#9aa8b0}
-.btn-del{background:none;border:none;color:#c0cad2;cursor:pointer;font-size:12px;padding:2px;border-radius:2px;line-height:1;flex-shrink:0}
-.btn-del:hover{color:#c84040;background:#ffecec}
-.totaux-wrap{border-top:1px solid #c8cdd4;padding:7px 8px;flex-shrink:0}
-.t-row{display:flex;justify-content:space-between;padding:2px 0;font:11px 'Segoe UI',sans-serif;color:#6a7888}
-.t-row .t-val{font-weight:700;color:#2a2a2a}
-.t-ttc-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#1a3a5a;border-radius:2px;margin-top:4px}
-.t-ttc-row span:first-child{font:700 11px 'Segoe UI',sans-serif;color:rgba(255,255,255,.65)}
-.t-ttc-row span:last-child{font:800 13px 'Segoe UI',sans-serif;color:#cbff00}
-.devis-actions{display:flex;gap:6px;padding:7px 8px;flex-shrink:0;border-top:1px solid #c8cdd4}
-.btn-pdf-col{flex:1;background:#2d7dd2;color:#fff;border:none;border-radius:3px;padding:7px 8px;font:700 11px 'Segoe UI',sans-serif;cursor:pointer}
-.btn-pdf-col:hover{background:#1b68bc}
-.btn-vider{background:#eeeff1;color:#5a6875;border:1px solid #c8cdd4;border-radius:3px;padding:7px 10px;font:700 11px 'Segoe UI',sans-serif;cursor:pointer}
-.btn-vider:hover{color:#c84040;border-color:#e0a0a0}
-
-/* TOAST */
-#save-toast{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#1a3a5a;color:#cbff00;padding:4px 12px;border-radius:14px;font:700 10px 'Segoe UI',sans-serif;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
-
-/* RESPONSIVE */
-@media(max-width:960px){.top-panels{grid-template-columns:0 1fr 200px}.col-familles-fs{display:none}}
-@media(max-width:650px){.workspace{grid-template-columns:1fr}.col-devis{display:none}.tb-field{display:none}}
+/* ── Misc ── */
+select,input[type=text],input[type=number]{font-family:inherit;}
+.lbl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:2px;}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <span class="logo">PLIALU</span>
-  <div class="topbar-sep"></div>
-  <div class="tb-field"><label>Client</label><input type="text" id="inputClient" placeholder="Nom du client…"></div>
-  <div class="tb-field"><label>Affaire</label><input type="text" id="inputAffaire" placeholder="Réf. affaire…"></div>
-  <div class="topbar-right"><button class="btn-gen-pdf" id="btnGenererPDF">📄 Générer PDF</button></div>
-</header>
+<div class="app">
 
-<div class="workspace">
-  <div class="work-left">
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <span class="logo">PLIALU</span>
+    <div class="tb-sep"></div>
+    <div class="tb-field"><label>CLIENT</label><input id="inputClient" placeholder="Raison sociale…"></div>
+    <div class="tb-field"><label>AFFAIRE</label><input id="inputAffaire" placeholder="Référence chantier…"></div>
+    <div class="tb-right">
+      <button class="btn-pdf" id="btnGenererPDF">📄 PDF</button>
+    </div>
+  </div>
 
-    <!-- TOP 3 PANELS -->
-    <div class="top-panels">
+  <!-- Main 4-col grid -->
+  <div class="main">
 
-      <fieldset class="col-familles-fs">
-        <legend>Gammes</legend>
-        <div class="fs-body">
-          <input type="search" class="search-input" id="searchInput" placeholder="🔍 Famille ou article…">
-          <div class="famille-list" id="familleList"></div>
+    <!-- Col 1 : Gammes -->
+    <div class="fieldset">
+      <div class="fs-title">Gammes</div>
+      <div class="fs-body" style="padding:8px;overflow-y:auto;">
+        <div class="gammes-grid" id="gammesGrid"></div>
+      </div>
+    </div>
+
+    <!-- Col 2 : Articles -->
+    <div class="fieldset">
+      <div class="fs-title" id="articlesTitle">Articles</div>
+      <div class="fs-body">
+        <div class="article-preview" id="articlePreview">
+          <svg viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="28" width="60" height="10" rx="1" fill="#e3e6ea"/>
+          </svg>
         </div>
-      </fieldset>
+        <div class="lbl">Article</div>
+        <select id="article" style="border:1px solid var(--line);border-radius:4px;padding:5px 7px;font-size:12px;background:#fff;color:var(--text);outline:none;width:100%;">
+          <option value="">— choisir une gamme —</option>
+        </select>
+      </div>
+    </div>
 
-      <fieldset>
-        <legend id="articlesPanelTitle">Articles</legend>
-        <div style="overflow-y:auto;max-height:76px;flex-shrink:0;padding:5px 7px;border-bottom:1px solid #c8cdd4">
-          <div class="articles-pills" id="articlesPills"></div>
+    <!-- Col 3 : Paramètres -->
+    <div class="fieldset">
+      <div class="fs-title">Paramètres</div>
+      <div class="fs-body">
+        <div class="param-row">
+          <label>Matière</label>
+          <span class="param-static">Aluminium</span>
         </div>
-        <div class="iso-wrap">
-          <canvas id="isoCanvas"></canvas>
-          <div class="iso-hint" id="isoHint">Sélectionnez un article et renseignez les cotes</div>
+        <div class="param-row">
+          <label>Épaisseur</label>
+          <select id="paramEpaisseur"></select>
         </div>
-      </fieldset>
+        <div class="param-row">
+          <label>RAL</label>
+          <input id="paramRal" type="text" placeholder="ex: 9006" maxlength="10">
+        </div>
+        <div class="param-row">
+          <label>Finition</label>
+          <select id="paramFinition"></select>
+        </div>
+        <div class="param-row">
+          <label>Quantité</label>
+          <input id="quantite" type="number" value="1" min="1" step="1">
+        </div>
+      </div>
+    </div>
 
-      <fieldset>
-        <legend>Paramètres</legend>
-        <div class="fs-body" style="display:flex;flex-direction:column;gap:6px">
-          <div><label>Matière</label><select id="paramMatiere"></select></div>
-          <div><label>Épaisseur</label><select id="paramEpaisseur"></select></div>
-          <div><label>RAL</label><input type="text" id="paramRal" placeholder="7016"></div>
-          <div><label>Finition</label><select id="paramFinition"></select></div>
-          <div><label>Quantité</label><input type="number" id="paramQte" value="1" min="1"></div>
-          <div><label>Coeff marge</label><input type="number" id="paramCoefMarge" value="0.65" step="0.01" min="0.1" max="1"></div>
-          <div><label>Taux MO (€/s)</label><input type="number" id="paramTauxMo" value="0.017" step="0.001"></div>
+    <!-- Col 4 : Champs calculés -->
+    <div class="fieldset">
+      <div class="fs-title">Calculé</div>
+      <div class="fs-body">
+        <div class="param-row">
+          <label>DVP mm</label>
+          <span id="resDvp" class="param-static">—</span>
         </div>
-      </fieldset>
+        <div class="param-row">
+          <label>Surface m²</label>
+          <span id="resSurface" class="param-static">—</span>
+        </div>
+        <div class="param-row">
+          <label>PU HT</label>
+          <span id="resPrixUnit" class="param-static">—</span>
+        </div>
+        <div class="param-row">
+          <label>Total HT</label>
+          <span id="resPrixTotal" class="param-static">—</span>
+        </div>
+        <div class="param-row">
+          <label>Réf mat.</label>
+          <span id="resRefMat" class="param-static" style="font-size:11px;color:var(--muted);">—</span>
+        </div>
+      </div>
+    </div>
 
-    </div><!-- /top-panels -->
+    <!-- Row bottom : 3 panels -->
+    <div class="row-bottom">
 
-    <!-- SAISIES -->
-    <fieldset class="panel-saisies">
-      <legend>Saisies</legend>
-      <div class="saisies-body">
-        <div class="saisies-top">
-          <div><label>Repère / Référence</label><input type="text" id="saisieRepere" placeholder="ex : BA-10, CV-RDC…"></div>
-          <div><label>Longueur (mm)</label><input type="number" id="saisieLg" placeholder="3000" min="1"></div>
+      <!-- Panel gauche : Devis en cours -->
+      <div class="panel-full">
+        <div class="fs-title">Devis en cours</div>
+        <div class="devis-lignes" id="devisLignes">
+          <div class="devis-empty" id="devisEmpty">Aucun article ajouté</div>
         </div>
-        <div>
-          <div class="saisies-section-lbl">Faces</div>
-          <div class="faces-grid">
-            <div class="dim-off" id="fieldA"><label>A mm</label><input type="number" id="saisieA" placeholder="—" min="0"></div>
-            <div class="dim-off" id="fieldB"><label>B mm</label><input type="number" id="saisieB" placeholder="—" min="0"></div>
-            <div class="dim-off" id="fieldC"><label>C mm</label><input type="number" id="saisieC" placeholder="—" min="0"></div>
-            <div class="dim-off" id="fieldD"><label>D mm</label><input type="number" id="saisieD" placeholder="—" min="0"></div>
-            <div class="dim-off" id="fieldE"><label>E mm</label><input type="number" id="saisieE" placeholder="—" min="0"></div>
-          </div>
+        <div class="devis-totaux">
+          <div class="t-row"><span>Total HT</span><span id="tHT">0,00 €</span></div>
+          <div class="t-row"><span>TVA 20 %</span><span id="tTVA">0,00 €</span></div>
+          <div class="t-ttc-row"><span>TTC</span><span id="tTTC">0,00 €</span></div>
         </div>
-        <div>
-          <div class="saisies-section-lbl">Angles de pli</div>
-          <div class="angles-grid">
-            <div class="dim-off" id="fieldPliA"><label>∠A °</label><input type="number" id="saisiePliA" value="90" min="1" max="179"></div>
-            <div class="dim-off" id="fieldPliB"><label>∠B °</label><input type="number" id="saisiePliB" value="90" min="1" max="179"></div>
-            <div class="dim-off" id="fieldPliC"><label>∠C °</label><input type="number" id="saisiePliC" placeholder="—" min="1" max="179"></div>
-            <div class="dim-off" id="fieldPliD"><label>∠D °</label><input type="number" id="saisiePliD" placeholder="—" min="1" max="179"></div>
+        <div class="devis-actions">
+          <button class="btn-gen-pdf" id="btnGenPDF">📄 Générer PDF</button>
+          <button class="btn-vider" id="btnVider">Vider</button>
+        </div>
+      </div>
+
+      <!-- Panel centre : Développé à plat -->
+      <div class="panel-full">
+        <div class="fs-title">Développé à plat</div>
+        <div style="padding:8px;flex:1;display:flex;flex-direction:column;">
+          <div class="render-area" id="flatArea">
+            <div class="render-placeholder" id="flatPlaceholder">Saisissez les cotes</div>
+            <svg id="flatSvg" style="display:none;" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
         </div>
       </div>
-    </fieldset>
 
-    <!-- RÉSULTATS -->
-    <fieldset class="panel-results">
-      <legend>Champs calculés</legend>
-      <div class="results-body">
-        <div class="chips-row">
-          <div class="chip" id="boxDvp"><div class="chip-lbl">DVP</div><div class="chip-val" id="resDvp">—</div></div>
-          <div class="chip" id="boxSurf"><div class="chip-lbl">Surface m²</div><div class="chip-val" id="resSurface">—</div></div>
-          <div class="chip accent" id="boxPU"><div class="chip-lbl">PU HT</div><div class="chip-val" id="resPrixUnit">—</div></div>
-          <div class="chip" id="boxPT"><div class="chip-lbl">Total HT</div><div class="chip-val" id="resPrixTotal">—</div></div>
-        </div>
-        <div class="desig-row">
-          <input type="text" class="desig-input" id="resultDesignation" readonly placeholder="Désignation générée…">
-          <input type="text" class="ref-input" id="resultRefMat" readonly placeholder="AL15-7016M">
-        </div>
-        <div class="actions-bar">
-          <button class="btn-add" id="btnAjouterDevis">＋ Ajouter au devis</button>
-          <div class="msg-ok" id="msgOk">✓ Ajouté !</div>
+      <!-- Panel droit : Rendu 3D + Saisies -->
+      <div class="panel-full">
+        <div class="fs-title">Rendu 3D + Saisies</div>
+        <div style="display:flex;flex-direction:column;flex:1;padding:8px;gap:8px;overflow:hidden;">
+          <div class="render-area" id="isoArea" style="min-height:180px;flex:1;">
+            <div class="render-placeholder" id="isoPlaceholder">Saisissez les cotes</div>
+            <svg id="iso3d" style="display:none;" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div class="lbl" style="flex-shrink:0;">Saisies (mm / °)</div>
+          <div style="overflow-y:auto;flex-shrink:0;max-height:160px;">
+            <div id="saisiesContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"></div>
+          </div>
+          <div class="saisie-row" style="flex-shrink:0;border-top:1px solid var(--line);padding-top:6px;">
+            <label style="width:65px;font-size:11px;color:var(--muted);">Long. mm</label>
+            <input id="saisieLongueur" type="number" placeholder="Longueur" style="flex:1;border:1px solid var(--line);border-radius:4px;padding:4px 7px;font-size:12px;outline:none;">
+          </div>
         </div>
       </div>
-    </fieldset>
 
-  </div><!-- /work-left -->
+    </div><!-- /.row-bottom -->
+  </div><!-- /.main -->
 
-  <!-- DEVIS (col droite) -->
-  <aside class="col-devis">
-    <div class="devis-hd">
-      <div class="devis-hd-title">Devis en cours</div>
-      <div class="devis-count" id="devisCount">0 pièce</div>
-    </div>
-    <div class="devis-lignes" id="devisLignes">
-      <div class="devis-empty" id="devisEmpty">Aucune pièce ajoutée</div>
-    </div>
-    <div class="totaux-wrap">
-      <div class="t-row"><span>Total HT</span><span class="t-val" id="tHT">0,00 €</span></div>
-      <div class="t-row"><span>TVA 20 %</span><span class="t-val" id="tTVA">0,00 €</span></div>
-      <div class="t-ttc-row"><span>Total TTC</span><span id="tTTC">0,00 €</span></div>
-    </div>
-    <div class="devis-actions">
-      <button class="btn-pdf-col" id="btnGenPDF">📄 Générer PDF</button>
-      <button class="btn-vider" id="btnVider">🗑 Vider</button>
-    </div>
-  </aside>
+  <!-- Footer -->
+  <div class="footer">
+    <input id="resultDesignation" type="text" placeholder="Désignation article…">
+    <span class="ref-mat" id="resultRefPiece">—</span>
+    <button class="btn-add-devis" id="btnAjouterDevis">➕ Ajouter au devis</button>
+  </div>
 
-</div><!-- /workspace -->
+</div><!-- /.app -->
 
-<div id="save-toast"></div>
-
-<!-- données métier (à fournir) -->
 <script src="plialu-data.js"></script>
-
-<!-- PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-
 <script>
-// ════════════════════════════════════
-// PASSE 2 — Données + Sélection
-// ════════════════════════════════════
-(() => {
-
-// ── État global ──
-let activeFamille = PLIALU_FAMILLES[0];
-let activeArticle = null;
-let devisLignes   = [];
-const SESSION_KEY = 'plialu-session';
-
-// ── Peuple les selects depuis plialu-data.js ──
-function initSelects() {
-  document.getElementById('paramEpaisseur').innerHTML =
-    PLIALU_EPAISSEURS.map(e =>
-      `<option value="${e.valeur}"${e.valeur===0.75?' selected':''}>${e.valeur} mm</option>`
-    ).join('');
-  document.getElementById('paramFinition').innerHTML =
-    PLIALU_FINITIONS.map(f =>
-      `<option value="${f.code}">${f.label}</option>`
-    ).join('');
-  document.getElementById('paramMatiere').innerHTML =
-    `<option value="ALU">Aluminium</option>`;
-}
-
-// ── SVGs schématiques par famille ──
-const FAM_SVG = {
-  'Bavette':            '<polyline points="4,8 22,8 22,24"/>',
-  'Bavette Accessoire': '<polyline points="4,8 22,8 22,24"/><circle cx="32" cy="16" r="4" fill="none"/>',
-  'Couvertine':         '<polyline points="4,22 4,10 21,10 21,6 38,6 38,10 38,22"/>',
-  'Couvertine Accessoire': '<polyline points="6,22 6,12 20,12 20,7 36,7 36,12"/><circle cx="36" cy="22" r="4" fill="none"/>',
-  'Couvre Joint':       '<polyline points="4,18 10,18 10,8 30,8 30,18 36,18"/>',
-  'Departs':            '<polyline points="4,22 4,10 22,10"/><polyline points="22,10 36,10 36,22"/>',
-  'Divers':             '<rect x="8" y="9" width="24" height="14" rx="1"/>',
-  'GeExtrude':          '<polyline points="4,22 4,8 36,8 36,22"/>',
-  'Habillage':          '<polyline points="4,14 34,14 34,22"/><polyline points="4,14 4,8"/>',
-  'Lateraux':           '<polyline points="4,22 4,8"/><line x1="4" y1="15" x2="36" y2="15"/>',
-  'Lisses':             '<line x1="4" y1="16" x2="38" y2="16"/>',
-  'Profils Divers':     '<polyline points="4,22 4,10 14,10 14,16 26,16 26,10 36,10 36,22"/>',
-  'Solin et Ge Pliées': '<polyline points="4,22 4,10 36,6"/>',
-  'Solins et Ge Pliées Accessoires': '<polyline points="4,22 4,10 36,6"/><circle cx="36" cy="6" r="4" fill="none"/>',
-  'Test':               '<line x1="4" y1="20" x2="36" y2="20"/><line x1="20" y1="8" x2="20" y2="20"/>'
-};
-function svgForFamille(nom) {
-  const p = FAM_SVG[nom] || '<polyline points="4,16 38,16"/>';
-  return `<svg width="34" height="24" viewBox="0 0 42 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-}
-
-// ── Rendu liste familles (filtrable) ──
-function renderFamilles(filter) {
-  const q = (filter || '').toLowerCase();
-  const list = document.getElementById('familleList');
-  const visible = PLIALU_FAMILLES.filter(f =>
-    !q || f.toLowerCase().includes(q) ||
-    getArticlesByFamille(f).some(a => a.article.toLowerCase().includes(q))
-  );
-  list.innerHTML = visible.map(f => {
-    const n = getArticlesByFamille(f).length;
-    return `<button class="famille-btn${f===activeFamille?' active':''}" data-famille="${f}">
-      <div class="fam-thumb">${svgForFamille(f)}</div>
-      <div class="fam-lbl"><strong>${f}</strong><span>${n} art.</span></div>
-    </button>`;
-  }).join('');
-  list.querySelectorAll('.famille-btn').forEach(btn =>
-    btn.addEventListener('click', () => selectFamille(btn.dataset.famille))
-  );
-}
-// ── Sélection famille ──
-function selectFamille(f) {
-  activeFamille = f;
-  const arts = getArticlesByFamille(f);
-  activeArticle = arts.length ? arts[0].article : null;
-  renderFamilles(document.getElementById('searchInput').value);
-  renderArticles(f);
-  updateFields(); drawIso(); calculeResultats();
-  saveSession();
-}
-
-// ── Rendu pills articles ──
-function renderArticles(famille, filter) {
-  const q = (filter || document.getElementById('searchInput').value).toLowerCase();
-  const arts = getArticlesByFamille(famille).filter(a =>
-    !q || a.article.toLowerCase().includes(q) || famille.toLowerCase().includes(q)
-  );
-  const title = document.getElementById('articlesPanelTitle');
-  if (title) title.textContent = `${famille} — ${arts.length} article${arts.length>1?'s':''}`;
-  document.getElementById('articlesPills').innerHTML = arts.map(a =>
-    `<button class="article-pill${a.article===activeArticle?' active':''}" data-art="${a.article}">${a.article}</button>`
-  ).join('');
-  document.getElementById('articlesPills').querySelectorAll('.article-pill').forEach(btn =>
-    btn.addEventListener('click', () => selectArticle(btn.dataset.art))
-  );
-}
-
-// ── Sélection article ──
-function selectArticle(art) {
-  activeArticle = art;
-  renderArticles(activeFamille);
-  updateFields(); drawIso(); calculeResultats();
-  saveSession();
-}
-
-// ── Recherche live ──
-document.getElementById('searchInput').addEventListener('input', e => {
-  const q = e.target.value;
-  renderFamilles(q);
-  renderArticles(activeFamille, q);
-});
-
-// ── Save session ──
-function saveSession() {
-  try {
-    const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-    localStorage.setItem(SESSION_KEY, JSON.stringify({
-      famille: activeFamille, article: activeArticle, devisLignes,
-      epaisseur: parseFloat(get('paramEpaisseur')), ral: get('paramRal'),
-      finition: get('paramFinition'), qte: get('paramQte'),
-      coefMarge: get('paramCoefMarge'), tauxMo: get('paramTauxMo'),
-      repere: get('saisieRepere'), lg: get('saisieLg'),
-      A: get('saisieA'), B: get('saisieB'), C: get('saisieC'),
-      D: get('saisieD'), E: get('saisieE'),
-      pliA: get('saisiePliA'), pliB: get('saisiePliB'),
-      pliC: get('saisiePliC'), pliD: get('saisiePliD'),
-      client: get('inputClient'), affaire: get('inputAffaire')
-    }));
-    showToast();
-  } catch(e) {}
-}
-
-// ── Load session ──
-function loadSession() {
-  let s; try { s = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) {}
-  if (!s) return;
-  if (s.famille && PLIALU_FAMILLES.includes(s.famille)) activeFamille = s.famille;
-  if (s.article) activeArticle = s.article;
-  if (Array.isArray(s.devisLignes)) devisLignes = s.devisLignes;
-  const map = {
-    paramEpaisseur:s.epaisseur, paramRal:s.ral, paramFinition:s.finition,
-    paramQte:s.qte, paramCoefMarge:s.coefMarge, paramTauxMo:s.tauxMo,
-    saisieRepere:s.repere, saisieLg:s.lg,
-    saisieA:s.A, saisieB:s.B, saisieC:s.C, saisieD:s.D, saisieE:s.E,
-    saisiePliA:s.pliA, saisiePliB:s.pliB, saisiePliC:s.pliC, saisiePliD:s.pliD,
-    inputClient:s.client, inputAffaire:s.affaire
-  };
-  Object.entries(map).forEach(([id, val]) => {
-    if (val == null || val === '') return;
-    const el = document.getElementById(id); if (el) el.value = val;
-  });
-}
-
-// ── Toast ──
-function showToast() {
-  const t = document.getElementById('save-toast');
-  if (!t) return;
-  t.textContent = '💾 Sauvegardé';
-  t.style.opacity = '1';
-  clearTimeout(t._ti);
-  t._ti = setTimeout(() => { t.style.opacity = '0'; }, 1600);
-}
-
-// ── Auto-save params ──
-['paramEpaisseur','paramRal','paramFinition','paramQte','paramCoefMarge',
- 'paramTauxMo','inputClient','inputAffaire'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) { el.addEventListener('input', saveSession); el.addEventListener('change', saveSession); }
-});
-
-// ── Inférence plis depuis le nom de l'article ──
-function _mkplis(n) {
-  const k = Math.max(1, Math.min(4, n));
-  const F = { 1:['A','B'], 2:['A','B','C'], 3:['A','B','C','D'], 4:['A','B','C','D','E'] };
-  const A = { 1:['pliA'], 2:['pliA','pliB'], 3:['pliA','pliB','pliC'], 4:['pliA','pliB','pliC','pliD'] };
-  return { plis:k, faces:F[k], angles:A[k] };
-}
-
-function getPlisFromArticle(name) {
-  // Couvertine spéciaux (testés en premier)
-  if (/[Pp]late\s+2\s*[Rr]abat|[Pp]ente/i.test(name))                return _mkplis(3);
-  if (/[Pp]late\s+1\s*[Rr]abat|[Cc]oll[eé]e|[Cc]lipse/i.test(name)) return _mkplis(2);
-  // Motif "N Plis" / "N pli" dans le nom
-  const m = name.match(/([1-4])\s*[Pp]li/);
-  if (m) return _mkplis(parseInt(m[1]));
-  // Motif PrefixN (Bv2, Bv3, Bv4 …) : lettre(s) + chiffre + autre lettre
-  const p = name.match(/[A-Za-z]+([2-4])[A-Za-z]/);
-  if (p) return _mkplis(parseInt(p[1]));
-  return _mkplis(1); // défaut : 2 faces, 1 angle
-}
-
-// ── Activation / désactivation des champs selon l'article actif ──
-function updateFields() {
-  const art = activeArticle ? getPlisFromArticle(activeArticle) : _mkplis(1);
-  ['A','B','C','D','E'].forEach(f => {
-    const on   = art.faces.includes(f);
-    const wrap = document.getElementById('field' + f);
-    const inp  = document.getElementById('saisie' + f);
-    if (wrap) wrap.classList.toggle('dim-off', !on);
-    if (inp)  { inp.disabled = !on; if (!on) inp.value = ''; }
-  });
-  ['pliA','pliB','pliC','pliD'].forEach(a => {
-    const on  = art.angles.includes(a);
-    const KEY = a[0].toUpperCase() + a.slice(1); // pliA → PliA
-    const wrap = document.getElementById('field' + KEY);
-    const inp  = document.getElementById('saisie' + KEY);
-    if (wrap) wrap.classList.toggle('dim-off', !on);
-    if (inp)  { inp.disabled = !on; if (!on) inp.value = ''; else if (!inp.value) inp.value = '90'; }
-  });
-  // Auto-save à chaque saisie
-  ['A','B','C','D','E','PliA','PliB','PliC','PliD'].forEach(f => {
-    const el = document.getElementById('saisie' + f);
-    if (el && !el._wired) {
-      el.addEventListener('input', () => { drawIso(); calculeResultats(); saveSession(); });
-      el._wired = true;
-    }
-  });
-  ['saisieLg','saisieRepere'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && !el._wired) {
-      el.addEventListener('input', () => { drawIso(); calculeResultats(); saveSession(); });
-      el._wired = true;
-    }
-  });
-  const hint = document.getElementById('isoHint');
-  if (hint) hint.style.display = 'none';
-}
-
-// ── Vue ISO — debounced ──
-let _isoTimer = null;
-function drawIso() {
-  clearTimeout(_isoTimer);
-  _isoTimer = setTimeout(_renderIso, 150);
-}
-
-function _renderIso() {
-  const canvas = document.getElementById('isoCanvas');
-  if (!canvas) return;
-  const ctx  = canvas.getContext('2d');
-  const wrap = canvas.parentElement;
-  const W    = wrap.clientWidth  || 600;
-  const H    = wrap.clientHeight || 280;
-  const dpr  = window.devicePixelRatio || 1;
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  ctx.clearRect(0, 0, W, H);
-
-  const art      = activeArticle ? getPlisFromArticle(activeArticle) : _mkplis(1);
-  const faceVals = art.faces.map(f =>
-    parseFloat(document.getElementById('saisie' + f).value) || 0);
-  const angleVals = art.angles.map(a => {
-    const key = a[0].toUpperCase() + a.slice(1);
-    return parseFloat(document.getElementById('saisie' + key).value) || 90;
-  });
-  const Lg  = parseFloat(document.getElementById('saisieLg').value) || 0;
-  const DVP = faceVals.reduce((s, v) => s + v, 0);
-
-  if (DVP === 0) {
-    ctx.fillStyle = '#2d3a4a';
-    ctx.font = '600 12px "Segoe UI",sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('Saisissez les cotes pour afficher la pièce', W / 2, H / 2);
-    return;
-  }
-
-  // ── 1. Profil 2D en mm ──
-  let dirDeg = 180;
-  const profile = [{ x: 0, y: 0 }];
-  for (let i = 0; i < faceVals.length; i++) {
-    const rad  = dirDeg * Math.PI / 180;
-    const prev = profile[profile.length - 1];
-    profile.push({ x: prev.x + Math.cos(rad) * faceVals[i],
-                   y: prev.y + Math.sin(rad) * faceVals[i] });
-    if (i < angleVals.length) dirDeg -= (180 - angleVals[i]);
-  }
-
-  // ── 2. Projection isométrique ──
-  const c30 = Math.cos(Math.PI / 6);
-  const s30 = Math.sin(Math.PI / 6);
-  const toIso = (px, py, z = 0) => ({
-    x: (px - z) * c30,
-    y:  py + (px + z) * s30
-  });
-
-  const LgVis = Lg > 0 ? Math.min(Lg, DVP * 2.5) : DVP * 1.5;
-
-  // ── 3. Bounding box → fitScale ──
-  const rawPts = [];
-  profile.forEach(p => {
-    rawPts.push(toIso(p.x, p.y, 0));
-    rawPts.push(toIso(p.x, p.y, LgVis));
-  });
-  const rxs = rawPts.map(p => p.x), rys = rawPts.map(p => p.y);
-  const bx0 = Math.min(...rxs), bx1 = Math.max(...rxs);
-  const by0 = Math.min(...rys), by1 = Math.max(...rys);
-  const bw = bx1 - bx0 || 1, bh = by1 - by0 || 1;
-  const PAD = 52;
-  const sc  = Math.min((W - PAD * 2) / bw, (H - PAD * 2) / bh);
-  const ox  = W / 2 - (bx0 + bw / 2) * sc;
-  const oy  = H / 2 - (by0 + bh / 2) * sc;
-
-  const toScreen = (px, py, z = 0) => {
-    const p = toIso(px, py, z);
-    return { x: p.x * sc + ox, y: p.y * sc + oy };
-  };
-
-  const cent = toScreen(
-    profile.reduce((s, p) => s + p.x, 0) / profile.length,
-    profile.reduce((s, p) => s + p.y, 0) / profile.length, 0);
-
-  // ── 4. Quads extrudés ──
-  for (let i = 0; i < faceVals.length; i++) {
-    if (faceVals[i] === 0) continue;
-    const a = toScreen(profile[i].x,   profile[i].y,   0);
-    const b = toScreen(profile[i+1].x, profile[i+1].y, 0);
-    const c = toScreen(profile[i+1].x, profile[i+1].y, LgVis);
-    const d = toScreen(profile[i].x,   profile[i].y,   LgVis);
-    const horiz = Math.abs(profile[i+1].y - profile[i].y) <=
-                  Math.abs(profile[i+1].x - profile[i].x);
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
-    ctx.closePath();
-    ctx.fillStyle = horiz ? 'rgba(255,182,220,0.5)' : 'rgba(220,150,190,0.4)';
-    ctx.fill();
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2; ctx.stroke();
-  }
-
-  // ── 5. Profils avant/arrière ──
-  const strokeProfil = (z, lw, col) => {
-    ctx.beginPath();
-    const s0 = toScreen(profile[0].x, profile[0].y, z);
-    ctx.moveTo(s0.x, s0.y);
-    for (let i = 1; i < profile.length; i++) {
-      const p = toScreen(profile[i].x, profile[i].y, z);
-      ctx.lineTo(p.x, p.y);
-    }
-    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
-  };
-  strokeProfil(LgVis, 1, '#888');
-  strokeProfil(0,     2, '#111');
-
-  // ── 6. Labels faces (magenta) ──
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  art.faces.forEach((face, i) => {
-    if (faceVals[i] === 0) return;
-    const mid = toScreen(
-      (profile[i].x + profile[i+1].x) / 2,
-      (profile[i].y + profile[i+1].y) / 2, 0);
-    const sa = toScreen(profile[i].x, profile[i].y, 0);
-    const sb = toScreen(profile[i+1].x, profile[i+1].y, 0);
-    const sdx = sb.x - sa.x, sdy = sb.y - sa.y;
-    const slen = Math.hypot(sdx, sdy) || 1;
-    let nx = -sdy / slen, ny = sdx / slen;
-    if ((cent.x - mid.x) * nx + (cent.y - mid.y) * ny > 0) { nx = -nx; ny = -ny; }
-    const lx = mid.x + nx * 18, ly = mid.y + ny * 18;
-    ctx.font = 'bold 11px "Segoe UI",sans-serif';
-    ctx.fillStyle = '#e60090';
-    ctx.fillText(face, lx, ly);
-    if (faceVals[i] >= 5) {
-      ctx.font = '9px "Segoe UI",sans-serif';
-      ctx.fillStyle = '#b3006e';
-      ctx.fillText(faceVals[i] + ' mm', lx, ly + 13);
-    }
-  });
-
-  // ── 7. Labels angles (rouge) ──
-  art.angles.forEach((angle, i) => {
-    const p = toScreen(profile[i + 1].x, profile[i + 1].y, 0);
-    ctx.font = 'bold 10px "Segoe UI",sans-serif';
-    ctx.fillStyle = '#cc0000';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(angleVals[i] + '°', p.x + 6, p.y - 9);
-  });
-
-  // ── 8. Label Lg ──
-  if (Lg > 0) {
-    const pa = toScreen(profile[0].x, profile[0].y, 0);
-    const pb = toScreen(profile[0].x, profile[0].y, LgVis);
-    ctx.font = 'bold 10px "Segoe UI",sans-serif';
-    ctx.fillStyle = '#e60090';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText('Lg = ' + Lg + ' mm', (pa.x + pb.x) / 2, Math.min(pa.y, pb.y) - 4);
-  }
-}
-
-// ── Calculs — stub Passe 3B ──
-function calculeResultats() {}
-
-// ── INIT ──
-initSelects();
-loadSession();
-renderFamilles();
-renderArticles(activeFamille);
-
-})();
+// ── JS Passes 2 & 3 ──
 </script>
-
 </body>
 </html>
