@@ -264,7 +264,119 @@ select,input[type=text],input[type=number]{font-family:inherit;}
 
 <script src="plialu-data.js"></script>
 <script>
-// ── JS Passes 2 & 3 ──
+// ── Bloc A : Init + Gammes + Articles ──
+(() => {
+let activeFamille = PLIALU_FAMILLES[0];
+let activeArticle = '';
+
+const FAM_SVG = {
+  "Bavette":                         "M4,24 H22 V8",
+  "Bavette Accessoire":              "M4,24 H14 V14 H24 V8",
+  "Couvertine":                      "M4,8 H32 V20",
+  "Couvertine Accessoire":           "M4,8 H18 V20 H32",
+  "Couvre Joint":                    "M4,22 H14 V8 H28",
+  "Departs":                         "M4,24 H12 V16 H20 V8",
+  "Divers":                          "M4,20 H20 V10 H30",
+  "GeExtrude":                       "M4,8 H18 V20 M18,8 V20",
+  "Habillage":                       "M4,22 H32 M4,8 H32",
+  "Lateraux":                        "M4,8 V24 H20",
+  "Lisses":                          "M4,14 H32 M4,18 H32",
+  "Profils Divers":                  "M4,8 H14 V20 H32",
+  "Solin et Ge Pliées":              "M4,20 H16 V10",
+  "Solins et Ge Pliées Accessoires": "M4,20 H14 V14 H24",
+  "Test":                            "M6,6 H30 V22 H6 Z",
+};
+
+function svgThumb(f) {
+  const d = FAM_SVG[f] || "M4,14 H32";
+  return `<svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${d}" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function initSelects() {
+  const ep = document.getElementById('paramEpaisseur');
+  PLIALU_EPAISSEURS.forEach(e =>
+    ep.appendChild(Object.assign(document.createElement('option'), {value: e.valeur, textContent: e.valeur + ' mm'}))
+  );
+  const fin = document.getElementById('paramFinition');
+  PLIALU_FINITIONS.forEach(f =>
+    fin.appendChild(Object.assign(document.createElement('option'), {value: f.code, textContent: f.label}))
+  );
+}
+
+function renderGammes() {
+  const grid = document.getElementById('gammesGrid');
+  grid.innerHTML = '';
+  PLIALU_FAMILLES.forEach(f => {
+    const el = document.createElement('div');
+    el.className = 'gamme-thumb' + (f === activeFamille ? ' active' : '');
+    el.innerHTML = svgThumb(f) + `<span>${f}</span>`;
+    el.addEventListener('click', () => selectFamille(f));
+    grid.appendChild(el);
+  });
+}
+
+function selectFamille(f) {
+  activeFamille = f;
+  activeArticle = '';
+  document.getElementById('articlesTitle').textContent = f;
+  renderGammes();
+  renderArticles();
+}
+
+function renderArticles() {
+  const sel = document.getElementById('article');
+  sel.innerHTML = '<option value="">— choisir —</option>';
+  getArticlesByFamille(activeFamille).forEach(a => {
+    const o = document.createElement('option');
+    o.value = a.article;
+    o.textContent = a.article;
+    if (a.article === activeArticle) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function selectArticle(name) {
+  activeArticle = name;
+  updateSaisies(getPlisFromArticle(name));
+}
+
+function getPlisFromArticle(name) {
+  if (!name) return 2;
+  const n = name.toLowerCase();
+  if (/4.?plis?|bv4/.test(n)) return 4;
+  if (/3.?plis?|bv3/.test(n)) return 3;
+  if (/2.?plis?|bv2/.test(n)) return 2;
+  if (/1.?pli|bv1/.test(n))   return 1;
+  return 2;
+}
+
+function updateSaisies(n) {
+  const faces  = ['A','B','C','D','E'].slice(0, n + 1);
+  const angles = ['pliA','pliB','pliC','pliD'].slice(0, n);
+  const c = document.getElementById('saisiesContainer');
+  c.innerHTML = '';
+  faces.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'saisie-row';
+    row.innerHTML = `<label>Face ${f} mm</label><input id="saisie${f}" type="number" placeholder="0" min="0">`;
+    c.appendChild(row);
+  });
+  angles.forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'saisie-row dim-angle';
+    row.innerHTML = `<label>${a} °</label><input id="${a}" type="number" placeholder="90" value="90" min="0" max="180">`;
+    c.appendChild(row);
+  });
+}
+
+document.getElementById('article').addEventListener('change', e => selectArticle(e.target.value));
+
+initSelects();
+renderGammes();
+renderArticles();
+updateSaisies(2);
+// ── Bloc B (calcul + rendu + devis) à venir ──
+})();
 </script>
 </body>
 </html>
