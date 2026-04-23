@@ -107,12 +107,13 @@ textarea{resize:vertical;min-height:90px}
 
 <!-- NAV -->
 <nav class="nav">
-  <a href="https://ghayth-plialu.github.io/" style="text-decoration:none;">
+  <a href="index.html" style="text-decoration:none;">
     <div class="nav-logo"><span>o</span> PLIALU</div>
   </a>
   <a class="nav-btn" href="calcul.html">Calculette</a>
   <a class="nav-btn active" href="devis.html">Devis</a>
   <a class="nav-btn" href="dessinateur.html">Dessinateur</a>
+  <a class="nav-btn" href="configurateur.html">Configurateur</a>
 </nav>
 
 <div class="page">
@@ -394,7 +395,8 @@ function importerDepuisCalculette(){
       dvp:         l.dvp         || '',
       lg:          l.lg          || '',
       qte:         l.qte         || 1,
-      puHT:        parseFloat(l.puHT) || 0
+      puHT:        parseFloat(l.puHT) || 0,
+      canvasImage: l.canvasImage  || null
     });
   });
   localStorage.removeItem('plialu-devis');
@@ -505,8 +507,11 @@ function renderTable(){
   lignesDevis.forEach(l => {
     const total = (l.qte * l.puHT).toFixed(2);
     const tr = document.createElement('tr');
+    const thumbHtml = l.canvasImage
+      ? `<img src="${l.canvasImage}" style="width:44px;height:28px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:3px;border:1px solid #dde3e8;background:#fff;flex-shrink:0">`
+      : '';
     tr.innerHTML = `
-      <td><input value="${l.designation}" onchange="updateLigne(${l.id},'designation',this.value)" style="min-width:160px"></td>
+      <td><div style="display:flex;align-items:center">${thumbHtml}<input value="${escHtml(l.designation)}" onchange="updateLigne(${l.id},'designation',this.value)" style="min-width:140px;flex:1"></div></td>
       <td><input value="${l.ral}"         onchange="updateLigne(${l.id},'ral',this.value)"         style="min-width:70px"></td>
       <td><input type="number" value="${l.dvp}" onchange="updateLigne(${l.id},'dvp',this.value)"  style="min-width:55px"></td>
       <td><input type="number" value="${l.lg}"  onchange="updateLigne(${l.id},'lg',this.value)"   style="min-width:65px"></td>
@@ -658,8 +663,12 @@ async function genererPDF(){
   y = 80;
 
   // ── TABLEAU LIGNES ──
+  const ISO_W  = 22;  // largeur image ISO en mm
+  const ISO_H  = 13;  // hauteur image ISO en mm
+  const CPAD   = 3;   // cell padding (identique à styles.cellPadding)
+
   const rows = lignesDevis.map(l => [
-    l.designation,
+    l.canvasImage ? '' : l.designation, // vidé si image — redessiné via hook
     buildRef(l.matiere, l.ep, l.ral),
     l.dvp ? String(l.dvp) : '',
     l.lg  ? String(l.lg)  : '',
@@ -672,7 +681,7 @@ async function genererPDF(){
     startY: y,
     head: [['Désignation','Réf. Mat.','DVP (mm)','Lg (mm)','Qté','PU HT','Total HT']],
     body: rows,
-    styles:      { fontSize:8, cellPadding:3 },
+    styles:      { fontSize:8, cellPadding:CPAD },
     headStyles:  { fillColor:[13,41,51], textColor:[232,252,105], fontStyle:'bold' },
     alternateRowStyles: { fillColor:[248,250,252] },
     columnStyles: {
@@ -683,6 +692,39 @@ async function genererPDF(){
       4: { cellWidth:12 },
       5: { cellWidth:22 },
       6: { cellWidth:24 }
+    },
+    didParseCell(data) {
+      // Force une hauteur de ligne suffisante pour contenir l'image
+      if (data.section === 'body' && data.column.index === 0 &&
+          lignesDevis[data.row.index] && lignesDevis[data.row.index].canvasImage) {
+        data.cell.styles.minCellHeight = ISO_H + CPAD * 2;
+      }
+    },
+    didDrawCell(data) {
+      if (data.section !== 'body' || data.column.index !== 0) return;
+      const l = lignesDevis[data.row.index];
+      if (!l || !l.canvasImage) return;
+
+      // Fond gris + image ISO centrée verticalement dans la cellule
+      const M  = 0.7; // marge en mm autour de l'image (~2 px écran)
+      const ix = data.cell.x + CPAD;
+      const iy = data.cell.y + (data.cell.height - ISO_H) / 2;
+      doc.setFillColor(240, 244, 248);
+      doc.roundedRect(ix - M, iy - M, ISO_W + M * 2, ISO_H + M * 2, 0.8, 0.8, 'F');
+      try {
+        doc.addImage(l.canvasImage, 'PNG', ix, iy, ISO_W, ISO_H);
+      } catch(e) { /* image corrompue, on ignore */ }
+
+      // Texte désignation à droite de l'image
+      const tx   = ix + ISO_W + 2;
+      const tw   = data.cell.width - ISO_W - CPAD * 2 - 2;
+      const ty   = data.cell.y + CPAD + 3.5;
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(13, 41, 51);
+      doc.splitTextToSize(l.designation, tw).forEach((line, i) => {
+        doc.text(line, tx, ty + i * 4);
+      });
     }
   });
 
