@@ -458,100 +458,124 @@ function renderCoupe(fN, fV, aV, thickness) {
 
   const segments = fN.map((label,i) => ({label, length: fV[i]}));
   const bends    = aV.map(v => ({angle: -(180 - v)}));
-  const th       = Math.max(thickness || 1, 1.5);
+  const th       = Math.max(thickness || 1, 2);
 
   const pts     = AluGeom.computePolyline(segments, bends);
   const flipped = pts.map(p => ({x: p.x, y: -p.y}));
   const bb      = AluGeom.bbox(flipped);
 
-  const pad     = Math.max(60, bb.w * 0.15, bb.h * 0.15);
+  // Padding adaptatif, extra hauteur pour cotations
+  const dimOff  = 28;
+  const padH    = Math.max(75, bb.w * 0.20);
+  const padV    = Math.max(75, Math.max(bb.h, 10) * 0.20, dimOff * 2 + 30);
   const minSize = 100;
-  const vbW = Math.max((bb.w || 40) + pad * 2, minSize);
-  const vbH = Math.max((bb.h || 40) + pad * 2, minSize);
-  const vbX = bb.minX - (vbW - (bb.w || 40)) / 2;
-  const vbY = bb.minY - (vbH - (bb.h || 40)) / 2;
+  const vbW = Math.max((bb.w || 40) + padH * 2, minSize);
+  const vbH = Math.max((bb.h || 40) + padV * 2, minSize);
+  const vbX = bb.minX - padH;
+  const vbY = bb.minY - padV;
 
+  const FONT  = `font-size="11" font-family="JetBrains Mono,monospace" font-weight="600" fill="#1a2330"`;
+  const cx0   = (bb.minX+bb.maxX)/2, cy0 = (bb.minY+bb.maxY)/2;
+
+  // Markers : double flèche
   let c = `<defs>
-    <pattern id="cp_grid" width="10" height="10" patternUnits="userSpaceOnUse">
-      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#e6ebf0" stroke-width="0.3"/>
-    </pattern>
-    <pattern id="cp_gridMaj" width="50" height="50" patternUnits="userSpaceOnUse">
-      <rect width="50" height="50" fill="url(#cp_grid)"/>
-      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#d0d9e2" stroke-width="0.5"/>
-    </pattern>
     <marker id="cp_arr" viewBox="0 0 10 10" refX="9" refY="5"
-      markerWidth="6" markerHeight="6" orient="auto">
+      markerWidth="5" markerHeight="5" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2330"/>
     </marker>
     <marker id="cp_arrS" viewBox="0 0 10 10" refX="1" refY="5"
-      markerWidth="6" markerHeight="6" orient="auto">
+      markerWidth="5" markerHeight="5" orient="auto">
       <path d="M 10 0 L 0 5 L 10 10 z" fill="#1a2330"/>
     </marker>
   </defs>
-  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="url(#cp_gridMaj)"/>`;
+  <rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="white"/>`;
 
-  // Profil principal
-  const ptStr = flipped.map(p=>`${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  // ── Profil ──
+  const ptStr = flipped.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   c += `<polyline points="${ptStr}" fill="none" stroke="#0a0f17"
     stroke-width="${th}" stroke-linejoin="miter" stroke-linecap="butt"/>`;
+  flipped.forEach(p =>
+    c += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${(th*0.8).toFixed(1)}" fill="#0a0f17"/>`
+  );
 
-  // Points aux plis
-  flipped.forEach(p => {
-    c += `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2" fill="#0a0f17"/>`;
-  });
-
-  // Cotations par segment
-  const dimOff = 35, extOver = 8;
-  const cx0 = (bb.minX+bb.maxX)/2, cy0 = (bb.minY+bb.maxY)/2;
+  // ── Cotations par segment ──
   segments.forEach((seg, i) => {
-    if (!seg.length) return;
-    const p1=flipped[i], p2=flipped[i+1];
-    const dx=p2.x-p1.x, dy=p2.y-p1.y, L=Math.hypot(dx,dy)||1;
-    const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+    if (seg.length < 0.5) return;
+    const p1 = flipped[i], p2 = flipped[i+1];
+    const dx = p2.x-p1.x, dy = p2.y-p1.y;
+    const L  = Math.hypot(dx, dy) || 1;
+    const mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2;
+    const absAng = Math.abs(Math.atan2(dy, dx));
+    const isHoriz = absAng < Math.PI/6 || absAng > 5*Math.PI/6;
+    const isVert  = Math.abs(absAng - Math.PI/2) < Math.PI/3;
+    const val = Math.round(seg.length);
+
+    // Normale extérieure (centroïde)
     let nx=-dy/L, ny=dx/L;
     if ((mx+nx-cx0)*nx+(my+ny-cy0)*ny < 0) { nx=-nx; ny=-ny; }
-    const ox=nx*dimOff, oy=ny*dimOff;
-    const d1={x:p1.x+ox,y:p1.y+oy}, d2={x:p2.x+ox,y:p2.y+oy};
-    const e1={x:p1.x+nx*extOver,y:p1.y+ny*extOver};
-    const e2={x:p2.x+nx*extOver,y:p2.y+ny*extOver};
-    const tx=(d1.x+d2.x)/2+nx*10, ty=(d1.y+d2.y)/2+ny*10;
-    c += `
-      <line x1="${e1.x.toFixed(1)}" y1="${e1.y.toFixed(1)}" x2="${d1.x.toFixed(1)}" y2="${d1.y.toFixed(1)}"
-        stroke="#1a2330" stroke-width="0.5"/>
-      <line x1="${e2.x.toFixed(1)}" y1="${e2.y.toFixed(1)}" x2="${d2.x.toFixed(1)}" y2="${d2.y.toFixed(1)}"
-        stroke="#1a2330" stroke-width="0.5"/>
-      <line x1="${d1.x.toFixed(1)}" y1="${d1.y.toFixed(1)}" x2="${d2.x.toFixed(1)}" y2="${d2.y.toFixed(1)}"
-        stroke="#1a2330" stroke-width="0.8"
-        marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>
-      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="#1a2330" font-size="11"
-        font-family="JetBrains Mono,monospace" font-weight="600"
-        text-anchor="middle">${seg.label} ${Math.round(seg.length)}</text>`;
+
+    if (isHoriz) {
+      // Ligne de cote parallèle au segment, déportée dans la direction normale
+      const ly  = my + ny * dimOff;
+      const lx1 = Math.min(p1.x, p2.x), lx2 = Math.max(p1.x, p2.x);
+      const gap = 3;
+      // Lignes d'extension
+      c += `<line x1="${p1.x.toFixed(1)}" y1="${(my+ny*gap).toFixed(1)}" x2="${p1.x.toFixed(1)}" y2="${(ly-ny*gap).toFixed(1)}" stroke="#1a2330" stroke-width="0.5"/>`;
+      c += `<line x1="${p2.x.toFixed(1)}" y1="${(my+ny*gap).toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${(ly-ny*gap).toFixed(1)}" stroke="#1a2330" stroke-width="0.5"/>`;
+      // Ligne de cote avec flèches
+      c += `<line x1="${lx1.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${lx2.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="#1a2330" stroke-width="0.8" marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>`;
+      // Texte
+      const ty = ly + ny * 5;
+      c += `<text x="${mx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="${ny<0?'auto':'hanging'}" ${FONT}>${val}</text>`;
+
+    } else if (isVert) {
+      // Ligne de cote parallèle au segment, déportée à droite/gauche
+      const lx  = mx + nx * dimOff;
+      const ly1 = Math.min(p1.y, p2.y), ly2 = Math.max(p1.y, p2.y);
+      const gap = 3;
+      c += `<line x1="${(mx+nx*gap).toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${(lx-nx*gap).toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="#1a2330" stroke-width="0.5"/>`;
+      c += `<line x1="${(mx+nx*gap).toFixed(1)}" y1="${p2.y.toFixed(1)}" x2="${(lx-nx*gap).toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#1a2330" stroke-width="0.5"/>`;
+      c += `<line x1="${lx.toFixed(1)}" y1="${ly1.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly2.toFixed(1)}" stroke="#1a2330" stroke-width="0.8" marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>`;
+      const tx = lx + nx * 5;
+      c += `<text x="${tx.toFixed(1)}" y="${(my+4).toFixed(1)}" text-anchor="${nx>0?'start':'end'}" ${FONT}>${val}</text>`;
+
+    } else {
+      // Diagonal : ligne parallèle dans la direction normale extérieure
+      const d1={x:p1.x+nx*dimOff, y:p1.y+ny*dimOff};
+      const d2={x:p2.x+nx*dimOff, y:p2.y+ny*dimOff};
+      c += `<line x1="${d1.x.toFixed(1)}" y1="${d1.y.toFixed(1)}" x2="${d2.x.toFixed(1)}" y2="${d2.y.toFixed(1)}" stroke="#1a2330" stroke-width="0.8" marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>`;
+      c += `<text x="${(mx+nx*(dimOff+10)).toFixed(1)}" y="${(my+ny*(dimOff+10)).toFixed(1)}" text-anchor="middle" ${FONT}>${val}</text>`;
+    }
   });
 
-  // Arcs d'angle aux plis
+  // ── Arcs d'angle aux plis (couleur sombre) ──
   bends.forEach((bend, i) => {
-    const p=flipped[i+1];
+    const p = flipped[i+1];
     if (!p || !flipped[i] || !flipped[i+2]) return;
     const prev=flipped[i], next=flipped[i+2];
     const dx1=prev.x-p.x, dy1=prev.y-p.y, L1=Math.hypot(dx1,dy1)||1;
     const dx2=next.x-p.x, dy2=next.y-p.y, L2=Math.hypot(dx2,dy2)||1;
     const u1x=dx1/L1, u1y=dy1/L1, u2x=dx2/L2, u2y=dy2/L2;
-    const r=20;
+    const r=18;
     const a1=Math.atan2(u1y,u1x), a2=Math.atan2(u2y,u2x);
     const cross=u1x*u2y-u1y*u2x;
     let mid=(a1+a2)/2; if(cross<0) mid+=Math.PI;
-    const tx=p.x+Math.cos(mid)*(r+16), ty=p.y+Math.sin(mid)*(r+16);
     const sx=p.x+Math.cos(a1)*r, sy=p.y+Math.sin(a1)*r;
     const ex=p.x+Math.cos(a2)*r, ey=p.y+Math.sin(a2)*r;
     const laf=cross<0?1:0;
     const displayAngle=Math.round(180-Math.abs(bend.angle));
-    c += `
-      <path d="M${sx.toFixed(1)},${sy.toFixed(1)} A${r},${r} 0 0,${laf} ${ex.toFixed(1)},${ey.toFixed(1)}"
-        fill="none" stroke="#e85d2f" stroke-width="1.2"/>
-      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="#e85d2f" font-size="10"
-        font-family="JetBrains Mono,monospace" font-weight="700"
-        text-anchor="middle">${displayAngle}°</text>`;
+    c += `<path d="M${sx.toFixed(1)},${sy.toFixed(1)} A${r},${r} 0 0,${laf} ${ex.toFixed(1)},${ey.toFixed(1)}" fill="none" stroke="#1a2330" stroke-width="1"/>`;
+    c += `<text x="${(p.x+Math.cos(mid)*(r+14)).toFixed(1)}" y="${(p.y+Math.sin(mid)*(r+14)).toFixed(1)}" fill="#1a2330" font-size="10" font-family="JetBrains Mono,monospace" font-weight="600" text-anchor="middle">${displayAngle}°</text>`;
   });
+
+  // ── Flèche DVP total en haut ──
+  if (bb.w > 0.5) {
+    const topY = bb.minY - dimOff - 18;
+    const x1 = bb.minX, x2 = bb.maxX, mx2 = (x1+x2)/2;
+    c += `<line x1="${x1.toFixed(1)}" y1="${topY.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${topY.toFixed(1)}" stroke="#1a2330" stroke-width="0.8" marker-start="url(#cp_arrS)" marker-end="url(#cp_arr)"/>`;
+    c += `<line x1="${mx2.toFixed(1)}" y1="${topY.toFixed(1)}" x2="${mx2.toFixed(1)}" y2="${(topY+8).toFixed(1)}" stroke="#1a2330" stroke-width="0.8"/>`;
+    c += `<text x="${mx2.toFixed(1)}" y="${(topY-5).toFixed(1)}" text-anchor="middle" font-size="11" font-family="JetBrains Mono,monospace" font-weight="700" fill="#1a2330">${Math.round(bb.w)}</text>`;
+  }
 
   svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
