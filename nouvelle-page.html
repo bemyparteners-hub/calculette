@@ -259,6 +259,12 @@ const PLIALU_TARIFS_FAM = {
   'Acier brut':         11.00
 };
 
+// Niveau 2 du fallback image : image générique par gamme.
+// Ajouter une entrée quand un fichier est déposé dans img/pieces/.
+// Ex : 'Bavette': 'img/pieces/gamme_bavette.png'
+const GAMME_FALLBACK_IMG = {
+};
+
 
 function renderGammes() {
   const sel = document.getElementById('gammeSelect');
@@ -276,6 +282,7 @@ function selectFamille(f) {
   activeArticle = '';
   document.getElementById('articlesTitle').textContent = f;
   renderArticles();
+  tryLoadArticleImage('', f);
 }
 
 function renderArticles() {
@@ -295,19 +302,32 @@ function getArticleImageUrl(articleName) {
   return `img/pieces/${slug}.png`;
 }
 
-function selectArticle(name) {
-  activeArticle = name;
-  updateSaisies(getPlisFromArticle(name));
+// 3-level image fallback: article-specific → gamme generic → SVG
+function tryLoadArticleImage(articleName, famille) {
   const imgEl = document.getElementById('articleImg');
   const svgEl = document.getElementById('articleSvgFallback');
   if (!imgEl || !svgEl) return;
-  if (!name) { imgEl.style.display='none'; svgEl.style.display=''; return; }
-  const art = PLIALU_ARTICLES.find(a => a.article === name);
-  const file = (art && art.img) ? art.img : null;
-  const url  = file ? `img/pieces/${file}` : getArticleImageUrl(name);
-  imgEl.onload  = () => { imgEl.style.display='block'; svgEl.style.display='none'; };
-  imgEl.onerror = () => { imgEl.style.display='none';  svgEl.style.display=''; };
-  imgEl.src = url;
+  const urls = [];
+  if (articleName) {
+    const art = PLIALU_ARTICLES.find(a => a.article === articleName);
+    if (art && art.img) urls.push(`img/pieces/${art.img}`);
+    urls.push(getArticleImageUrl(articleName));
+  }
+  if (famille && GAMME_FALLBACK_IMG[famille]) urls.push(GAMME_FALLBACK_IMG[famille]);
+  if (!urls.length) { imgEl.style.display='none'; svgEl.style.display=''; return; }
+  function tryNext(i) {
+    if (i >= urls.length) { imgEl.style.display='none'; svgEl.style.display=''; return; }
+    imgEl.onload  = () => { imgEl.style.display='block'; svgEl.style.display='none'; };
+    imgEl.onerror = () => tryNext(i + 1);
+    imgEl.src = urls[i];
+  }
+  tryNext(0);
+}
+
+function selectArticle(name) {
+  activeArticle = name;
+  updateSaisies(getPlisFromArticle(name));
+  tryLoadArticleImage(name, activeFamille);
 }
 
 function getPlisFromArticle(name) {
