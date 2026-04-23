@@ -26,13 +26,13 @@ const PLIALU_FAMILLES = [
 const PLIALU_ARTICLES = [
   // ── Bavette ──────────────────────────────────────────────────────────────
   { id: 1,   famille: "Bavette", article: "Bv2Biaise" },
-  { id: 2,   famille: "Bavette", article: "Bv2Plis" },
-  { id: 3,   famille: "Bavette", article: "Bv2Plis-90deg" },
-  { id: 4,   famille: "Bavette", article: "Bv3Plis" },
-  { id: 5,   famille: "Bavette", article: "Bv3Plis-90deg" },
+  { id: 2,   famille: "Bavette", article: "Bv2Plis",        img: "bv2plis.png" },
+  { id: 3,   famille: "Bavette", article: "Bv2Plis-90deg",  img: "bv2plis-90deg.png" },
+  { id: 4,   famille: "Bavette", article: "Bv3Plis",        img: "bv3plis.png" },
+  { id: 5,   famille: "Bavette", article: "Bv3Plis-90deg",  img: "bv3plis-90deg.png" },
   { id: 6,   famille: "Bavette", article: "Bv3PlisBiaise" },
-  { id: 7,   famille: "Bavette", article: "Bv4Plis" },
-  { id: 8,   famille: "Bavette", article: "Bv4Plis-90deg" },
+  { id: 7,   famille: "Bavette", article: "Bv4Plis",        img: "bv4plis.png" },
+  { id: 8,   famille: "Bavette", article: "Bv4Plis-90deg",  img: "bv4plis-90deg.png" },
   { id: 9,   famille: "Bavette", article: "Bv4PlisBiaise" },
   { id: 10,  famille: "Bavette", article: "Bv4PlisPerfos" },
   { id: 11,  famille: "Bavette", article: "Bavette 2 Plis Encoche Droite Generique" },
@@ -144,19 +144,19 @@ const PLIALU_ARTICLES = [
   { id: 115, famille: "Bavette Accessoire", article: "EclIntBv3et4" },
 
   // ── Couvertine ───────────────────────────────────────────────────────────
-  { id: 116, famille: "Couvertine", article: "Couvertine Pente Clipse" },
-  { id: 117, famille: "Couvertine", article: "Couvertine Pente Collee" },
+  { id: 116, famille: "Couvertine", article: "Couvertine Pente Clipse",  img: "couvertine_pente_clipse.png" },
+  { id: 117, famille: "Couvertine", article: "Couvertine Pente Collee",  img: "couvertine_pente_collee.png" },
   { id: 118, famille: "Couvertine", article: "Couvertine Pente Ge Ecrasé" },
   { id: 119, famille: "Couvertine", article: "Couvertine Plate 1 Rabat Ge" },
   { id: 120, famille: "Couvertine", article: "Couvertine Plate 1 Rabat" },
   { id: 121, famille: "Couvertine", article: "Couvertine Plate 2 Rabats Ge" },
-  { id: 122, famille: "Couvertine", article: "Couvertine Plate 2 Rabats" },
+  { id: 122, famille: "Couvertine", article: "Couvertine Plate 2 Rabats", img: "couvertine_plate_2_rabats.png" },
   { id: 123, famille: "Couvertine", article: "Couvertine Plate Clipse" },
   { id: 124, famille: "Couvertine", article: "Couvertine Plate Collee Ge Ecrasé" },
-  { id: 125, famille: "Couvertine", article: "Couvertine Plate Collee" },
+  { id: 125, famille: "Couvertine", article: "Couvertine Plate Collee",    img: "couvertine_plate_collee.png" },
   { id: 126, famille: "Couvertine", article: "Couvertine Plate Descendante" },
   { id: 127, famille: "Couvertine", article: "Couvertine Plate Montante" },
-  { id: 128, famille: "Couvertine", article: "Couvertines" },
+  { id: 128, famille: "Couvertine", article: "Couvertines",                img: "couvertines.png" },
 
   // ── Couvertine Accessoire ────────────────────────────────────────────────
   { id: 129, famille: "Couvertine Accessoire", article: "Angle Couvertine Plate Collee Ouverture Variable" },
@@ -211,13 +211,13 @@ const PLIALU_ARTICLES = [
   { id: 176, famille: "Couvre Joint", article: "Couvre joint Angle Z-Perfos" },
   { id: 177, famille: "Couvre Joint", article: "Couvre joint Angle Z-PerfosHaute" },
   { id: 178, famille: "Couvre Joint", article: "Couvre Joint Plat Perfos" },
-  { id: 179, famille: "Couvre Joint", article: "Couvre joint Plat" },
+  { id: 179, famille: "Couvre Joint", article: "Couvre joint Plat",        img: "couvre_joint_plat.png" },
   { id: 180, famille: "Couvre Joint", article: "Omega Laque Ext" },
   { id: 181, famille: "Couvre Joint", article: "Omega Laque Int" },
   { id: 182, famille: "Couvre Joint", article: "Omega" },
   { id: 183, famille: "Couvre Joint", article: "Releve 1 Pli" },
   { id: 184, famille: "Couvre Joint", article: "Releve 2 Plis" },
-  { id: 185, famille: "Couvre Joint", article: "Couvre Joint General" },
+  { id: 185, famille: "Couvre Joint", article: "Couvre Joint General",     img: "couvre_joint_general.png" },
 
   // ── Departs ──────────────────────────────────────────────────────────────
   { id: 186, famille: "Departs", article: "Depart Type 1" },
@@ -318,8 +318,8 @@ const PLIALU_ARTICLES = [
   { id: 269, famille: "Profils Divers", article: "Profil-1-Perfos Type 2" },
 
   // ── Solin et Ge Pliées ───────────────────────────────────────────────────
-  { id: 270, famille: "Solin et Ge Pliées", article: "Ge Type 1" },
-  { id: 271, famille: "Solin et Ge Pliées", article: "Solins et Ge Pliées" },
+  { id: 270, famille: "Solin et Ge Pliées", article: "Ge Type 1",           img: "ge_type_1.png" },
+  { id: 271, famille: "Solin et Ge Pliées", article: "Solins et Ge Pliées", img: "solins_et_ge_pliees.png" },
   { id: 272, famille: "Solin et Ge Pliées", article: "Ge Type 1 Non Perfores" },
 
   // ── Solins et Ge Pliées Accessoires ─────────────────────────────────────

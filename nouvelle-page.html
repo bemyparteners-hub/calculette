@@ -141,7 +141,9 @@ select,input[type=text],input[type=number]{font-family:inherit;}
       <div class="fs-title" id="articlesTitle">Articles</div>
       <div class="fs-body">
         <div class="article-preview" id="articlePreview">
-          <svg viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <img id="articleImg" src="" alt=""
+               style="width:100%;height:100%;object-fit:contain;display:none;">
+          <svg id="articleSvgFallback" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="10" y="28" width="60" height="10" rx="1" fill="#e3e6ea"/>
           </svg>
         </div>
@@ -288,9 +290,24 @@ function renderArticles() {
   });
 }
 
+function getArticleImageUrl(articleName) {
+  const slug = articleName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_\-]/g, '');
+  return `img/pieces/${slug}.png`;
+}
+
 function selectArticle(name) {
   activeArticle = name;
   updateSaisies(getPlisFromArticle(name));
+  const imgEl = document.getElementById('articleImg');
+  const svgEl = document.getElementById('articleSvgFallback');
+  if (!imgEl || !svgEl) return;
+  if (!name) { imgEl.style.display='none'; svgEl.style.display=''; return; }
+  const art = PLIALU_ARTICLES.find(a => a.article === name);
+  const file = (art && art.img) ? art.img : null;
+  const url  = file ? `img/pieces/${file}` : getArticleImageUrl(name);
+  imgEl.onload  = () => { imgEl.style.display='block'; svgEl.style.display='none'; };
+  imgEl.onerror = () => { imgEl.style.display='none';  svgEl.style.display=''; };
+  imgEl.src = url;
 }
 
 function getPlisFromArticle(name) {
